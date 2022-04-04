@@ -1,5 +1,5 @@
-// vdifparse_utils.h - provides general utility functions such as for printing
-// structs, converting between enum and string types, and more.
+// vdifparse_input.h - provides functions to open and fill buffers from file
+// and pipe sources.
 // Copyright (C) 2022 Mars Buttfield-Addison
 //
 // This program is free software: you can redistribute it and/or modify it under
@@ -14,25 +14,15 @@
 //
 // You should have received a copy of the GNU General Public License along with
 // this program. If not, see <http://www.gnu.org/licenses/>.
-#ifndef VDIFPARSE_UTILS_H
-#define VDIFPARSE_UTILS_H
+#ifndef VDIFPARSE_INPUT_H
+#define VDIFPARSE_INPUT_H
 
-#include "vdifparse_types.h"
+#include "vdifparse_utils.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define vp_stdout stdout // TODO: remove
-#define vp_stderr stderr // TODO: remove
+void open_file_input(struct InputStream* in, char* file_path);
 
-#define _1e9 1000000000
-#define _1e6 1000000
-#define _1e3 1000
-
-void print_attributes(struct InputStream* in);
-char* string_for_input_format(enum InputFormat format);
-char* string_for_data_type(enum DataType type);
-char* string_for_edv(enum ExtendedDataVersion version);
-char* string_for_frequency(unsigned long int frequency);
-
-#endif // VDIFPARSE_UTILS_H
+#endif // VDIFPARSE_INPUT_H

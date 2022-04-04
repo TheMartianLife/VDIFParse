@@ -17,23 +17,17 @@
 #ifndef VDIFPARSE_API_H
 #define VDIFPARSE_API_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "vdifparse_headers.h"
+#include "vdifparse_input.h"
 #include "vdifparse_types.h"
 #include "vdifparse_utils.h"
 
-#define MAX_BITS_PER_SAMPLE 32
-#define MAX_DATA_THREADS 1024
-#define MAX_FRAME_LENGTH 134217728 // bytes
-
-// get data
+// initialise stream object
 struct InputStream* open_file(char* file_path);
+struct InputStream* open_stream();
 
 // configure stream
-void set_gap_policy(struct InputStream* stream, enum GapPolicy policy);
+void set_gap_policy(struct InputStream* in, enum GapPolicy policy);
 
 // validity checks
 
@@ -42,5 +36,8 @@ void set_gap_policy(struct InputStream* stream, enum GapPolicy policy);
 // prepare for output
 
 // process data
+
+// cleanup
+void close(struct InputStream* in);
 
 #endif // VDIFPARSE_API_H

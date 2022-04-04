@@ -17,6 +17,8 @@
 #ifndef VDIFPARSE_TYPES_H
 #define VDIFPARSE_TYPES_H
 
+#include <stdio.h>
+
 enum InputMode { FileMode, StreamMode };
 enum InputFormat { VDIF, VDIF_LEGACY, CODIF };
 enum DataType { RealData, ComplexData };
@@ -39,13 +41,13 @@ struct InputStream {
     unsigned int format_version;
     unsigned char header_length;
     unsigned char valid_flag;
-    // TODO reference epoch + seconds offset
+    // TODO: reference epoch + seconds offset
     unsigned long int frame_length;
     enum DataType data_type;
     unsigned long int num_channels;
     unsigned int bits_per_sample;
     char* station_id; // unsigned 16-bit int or 2-char ASCII
-    // TODO middle fields
+    // TODO: middle fields
     unsigned int extended_data_version;
 
     unsigned long int frame_header_length;
@@ -56,6 +58,8 @@ struct InputStream {
     enum GapPolicy gap_policy;
 
     const unsigned char* raw_data_buffer;
+
+    FILE *input_file_handle;
 };
 
 #endif // VDIFPARSE_TYPES_H

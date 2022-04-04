@@ -17,9 +17,6 @@
 
 #include "vdifparse_utils.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-
 void print_attributes(struct InputStream* in) {
     char* data_format = string_for_input_format(in->format);
     int format_version = in->format_version;
@@ -31,7 +28,7 @@ void print_attributes(struct InputStream* in) {
     fprintf(vp_stdout, "Bits per sample: %d\n", in->bits_per_sample);
     fprintf(vp_stdout, "Station ID: %s\n", in->station_id);
     fprintf(vp_stdout, "EDV: %d (%s)\n", edv, string_for_edv(edv));
-    fprintf(vp_stdout, "Frame length: %ld bytes \n", in->frame_length);
+    fprintf(vp_stdout, "Data length: %ld bytes \n", in->frame_data_length);
     if (in->sample_rate != 0) {
         char* frequency = string_for_frequency(in->sample_rate);
         fprintf(vp_stdout, "Sample rate: %s", frequency);

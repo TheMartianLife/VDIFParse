@@ -18,41 +18,51 @@
 #include "vdifparse_headers.h"
 
 void parse_vdif_header(struct InputStream* in) {
+    // parse header field values
     unsigned int *header_words = (unsigned int *)(in->raw_data_buffer);
-
+    // WORD 0, BYTES 7-0
     unsigned int word0 = header_words[0];
     in->valid_flag = (unsigned char)(word0 >> 31);
     unsigned char legacy_mode = (unsigned char)((word0 >> 30) & 0x2);
     in->format = (legacy_mode) ? VDIF_LEGACY : VDIF;
-    // offset seconds
-
+    // TODO: ------ offset seconds
+    // WORD 1, BYTES 7-0
     unsigned int word1 = header_words[1];
-    // ref epoch
-    // data frame number
-
+    // TODO: ------ ref epoch
+    // TODO: ------ data frame number
+    // WORD 2, BYTES 7-0
     unsigned int word2 = header_words[2];
     in->format_version = (unsigned int)(word2 >> 29);
     in->num_channels = pow((unsigned long int)((word2 >> 24) & 0xf8), 2);
     in->frame_length = (unsigned long int)((word2 & 0xffffff) * 8);
-
+    // WORD 3, BYTES 7-0
     unsigned int word3 = header_words[3];
     in->data_type = (unsigned int)(word3 >> 31);
     in->bits_per_sample = (unsigned int)((word3 >> 24) & 0xfffe);
-    // thread id
+    // TODO: ------ thread id
     unsigned char station_id1 = ((word3 >> 8) & 0xff);
     char* id_string = (char*)malloc(8 * sizeof(char));
     if (station_id1 == ASCII_0 || station_id1 > (char)0x7f) {
+        // NOTE: defaulting to this if station_id1 > (char)0x7f is not to spec
+        // but anything > 0x7f can't be ASCII (what it's supposed to be),
+        // and some test files appear to use station_id = 0xfffc ?
         sprintf(id_string, "%d", (word3 & 0xffff));
     } else {
         unsigned char station_id2 = (word3 & 0xff);
         sprintf(id_string, "%c%c", station_id1, station_id2);
     }
     in->station_id = id_string;
-
+    // WORD 4, BITS 31-24
+    if (in->format == VDIF) {
+        // (if format == VDIFL, then EDV = None by default)
+        unsigned int word4 = header_words[4];
+        in->extended_data_version = (unsigned int)(word4 >> 24);
+    }
+    // now some inferred attributes
     in->frame_header_length = (in->format == VDIF) ? 32 : 16;
     in->frame_data_length = in->frame_length - in->frame_header_length;
-
-    parse_vdif_edv(in);
+    // further information from any included metadata fields
+    parse_vdif_extended_data(in);
 }
 
 void parse_codif_header(struct InputStream* in) {
@@ -74,20 +84,18 @@ void parse_codif_header(struct InputStream* in) {
     unsigned int word7 = header_words[7];
 }
 
-void parse_vdif_edv(struct InputStream* in) {
-    unsigned int *header_words = (unsigned int *)(in->raw_data_buffer);
-    in->extended_data_version = (unsigned int)(header_words[4] >> 24);
+void parse_vdif_extended_data(struct InputStream* in) {
     switch (in->extended_data_version) {
         case None: return;
-        case NICT: parse_vdif_edv_nict(in);
-        case ALMA: parse_vdif_edv_alma(in);
-        case NRAO: parse_vdif_edv_nrao(in);
-        case CornerTurned: parse_vdif_edv_corner_turned(in);
-        case Haystack: return parse_vdif_edv_haystack(in);
+        case NICT: parse_vdif_extended_data_nict(in);
+        case ALMA: parse_vdif_extended_data_alma(in);
+        case NRAO: parse_vdif_extended_data_nrao(in);
+        case CornerTurned: parse_vdif_extended_data_corner_turned(in);
+        case Haystack: return parse_vdif_extended_data_haystack(in);
     }
 }
 
-void parse_vdif_edv_nict(struct InputStream* in) {
+void parse_vdif_extended_data_nict(struct InputStream* in) {
     unsigned int *header_words = (unsigned int *)(in->raw_data_buffer);
 
     unsigned int word4 = header_words[4];
@@ -99,7 +107,7 @@ void parse_vdif_edv_nict(struct InputStream* in) {
     unsigned int word7 = header_words[7];
 }
 
-void parse_vdif_edv_alma(struct InputStream* in) {
+void parse_vdif_extended_data_alma(struct InputStream* in) {
     unsigned int *header_words = (unsigned int *)(in->raw_data_buffer);
     unsigned int word4 = header_words[4];
     unsigned int word5 = header_words[5];
@@ -107,7 +115,7 @@ void parse_vdif_edv_alma(struct InputStream* in) {
     unsigned int word7 = header_words[7];
 }
 
-void parse_vdif_edv_nrao(struct InputStream* in) {
+void parse_vdif_extended_data_nrao(struct InputStream* in) {
     unsigned int *header_words = (unsigned int *)(in->raw_data_buffer);
 
     unsigned int word4 = header_words[4];
@@ -120,7 +128,7 @@ void parse_vdif_edv_nrao(struct InputStream* in) {
     unsigned int word7 = header_words[7];
 }
 
-void parse_vdif_edv_corner_turned(struct InputStream* in) {
+void parse_vdif_extended_data_corner_turned(struct InputStream* in) {
     unsigned int *header_words = (unsigned int *)(in->raw_data_buffer);
     unsigned int word4 = header_words[4];
     unsigned int word5 = header_words[5];
@@ -128,7 +136,7 @@ void parse_vdif_edv_corner_turned(struct InputStream* in) {
     unsigned int word7 = header_words[7];
 }
 
-void parse_vdif_edv_haystack(struct InputStream* in) {
+void parse_vdif_extended_data_haystack(struct InputStream* in) {
     unsigned int *header_words = (unsigned int *)(in->raw_data_buffer);
     unsigned int word4 = header_words[4];
     unsigned int word5 = header_words[5];

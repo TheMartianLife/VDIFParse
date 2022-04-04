@@ -18,26 +18,15 @@
 #include "vdifparse_api.h"
 
 struct InputStream* open_file(char* file_path) {
-    // open file in binary mode
-    FILE *input_file = fopen(file_path, "rb");
-    if (input_file == NULL) { // check it actually opened
-        fprintf(vp_stderr, "File %s could not be opened.", file_path);
-        exit(1); // TODO: better error recovery
-    }
-
     struct InputStream* in;
     in = (struct InputStream *)calloc(1, sizeof(struct InputStream));
     in->mode = FileMode;
-    // TODO: remove
-    unsigned char* file_contents;
-    fseek(input_file, 0, SEEK_END);
-    int file_size = ftell(input_file);
-    file_contents = malloc(file_size);
-    fseek(input_file, 0, SEEK_SET);
-    fread(file_contents, file_size, 1, input_file);
-    in->raw_data_buffer = file_contents;
-    fclose(input_file);
-    // TODO: remove
+
+    open_file_input(in, file_path);
+    if (in->input_file_handle == NULL) { // check it actually opened
+        fprintf(vp_stderr, "File %s could not be opened.", file_path);
+        exit(1); // TODO: make this recoverable maybe?
+    }
 
     parse_vdif_header(in);
 
@@ -46,4 +35,12 @@ struct InputStream* open_file(char* file_path) {
 
 void set_gap_policy(struct InputStream* in, enum GapPolicy policy) {
     in->gap_policy = policy;
+}
+
+void close(struct InputStream* in) {
+    if (in->input_file_handle != NULL) {
+        fclose(in->input_file_handle);
+    }
+
+    // TODO: free memory
 }
