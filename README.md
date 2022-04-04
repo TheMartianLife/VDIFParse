@@ -1,10 +1,8 @@
-<img align="right" width="150" src=docs/logo.png>
+<img align="right" width="240" src="docs/logo.png" style="padding:10px;">
 
 # VDIFparse
 
-> :warning: **WARNING**: This project is in early development and is not yet suitable for public use. This repo is public for feedback purposes only.
-
-**© 2022 Mars Buttfield-Addison**
+> :warning: **WARNING**: This project is in early development and is not yet suitable for public use. **This repo is public for feedback purposes only.**
 
 A simple C library for parsing stream- or file-based radio telescope data in **VDIF**[^1] or **CODIF**[^2] formats.
 
@@ -13,21 +11,23 @@ A simple C library for parsing stream- or file-based radio telescope data in **V
 
 ## Usage
 
-VDIFparse can be given data to parse in either of two ways: **from streamed or piped input** or **from a file**. These loosely correlate with the two ways a user is likely to interact with VDIF data: **live** (as data comes in from a telescope or similar source) or **later** (on historical data at rest).
+VDIFparse can be given data to parse in either of two ways: 
+* **from streamed or piped input** (`StreamMode`), or 
+* **from a file** (`FileMode`). 
 
-**Usage with Live Data:** `StreamMode`
+These loosely correlate with the two ways a user is likely to interact with VDIF data: **live** (as data comes in from a telescope or similar source) or **later** (on historical data at rest).
 
 ```c
+// example usage in StreamMode
 struct InputStream* in = open_stream();
-
+// TODO
 close(in);
 ```
 
-**Usage with Historical Data:** `FileMode`
-
 ```c
+// example usage in FileMode
 struct InputStream* in = open_file("input_file.vdif");
-
+// TODO
 close(in);
 ```
 
