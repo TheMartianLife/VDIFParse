@@ -20,8 +20,6 @@
 #include "vdifparse_utils.h"
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 void open_file_input(struct InputStream* in, char* file_path);
 

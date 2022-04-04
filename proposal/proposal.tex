@@ -1,0 +1,91 @@
+\documentclass[11pt]{article}
+
+\usepackage{listings}
+\usepackage[usenames,dvipsnames]{xcolor}
+
+\title{Proposal: VDIFParse}
+\author{Mars Buttfield-Addison}
+\date{\today}
+
+\definecolor{bluekeywords}{rgb}{0.13,0.13,1}
+\definecolor{greencomments}{rgb}{0,0.5,0}
+\definecolor{redstrings}{rgb}{0.9,0,0}
+\lstset{
+	language=C,
+	basicstyle=\ttfamily,
+	tabsize=4,
+	showspaces=false,
+	showtabs=false,
+	breaklines=true,
+	showstringspaces=false,
+	breakatwhitespace=true,
+	escapeinside={(*@}{@*)},
+	keywordstyle=\color{bluekeywords},
+	commentstyle=\color{greencomments},
+	stringstyle=\color{redstrings},
+}
+
+\begin{document}
+\maketitle
+
+\section{Purpose}
+
+Currently, the need to ingest and manipulate telescope data in the modern standard VDIF (or variant CODIF) formats is met by DiFX with its \texttt{mark5access} and \texttt{vdifio} libraries. However, the need for \texttt{mark5access} to also support several legacy formats has prevented it from using practices best suited to the VDIF format, at a significant cost to performance. The limited functionality of the \texttt{vdifio} library could not be incorporated into \texttt{mark5access} without suffering the inherent slowdown to multithreaded VDIF processing.
+
+This presents an opportunity to create a new library that combines the functionality of the two previous libraries, designed especially for performance with the VDIF format. Coupled with a modern, easy-to-use API, such a library could also fill a gap that would allow quick creation of small VDIF processing programs. Herein proposes such a solution, called \texttt{VDIFParse}.
+
+\section{Use Cases}
+
+\section{Technologies}
+
+Library is to be written in native C, in conformance with \textit{at least} GNU90 ad C99. Dependencies will be kept to the C Standard Library. The library should target both OSX and Debian-based Linux.
+
+\section{API Design}
+
+Usage will centre around a struct type \lstinline{InputStream}, which can be in one of two modes: \lstinline{FileMode} or \lstinline{StreamMode}.
+
+In \lstinline{FileMode}, the expected interaction is that a user will initialise an \lstinline{InputStream} using the \lstinline{open_file()} function and passing a filepath to a valid VDIF or CODIF file.
+
+\begin{lstlisting} 
+#include "vdifparse.h"
+
+int main() { 
+	// open new stream (also parses first header)
+	struct InputStream* in = open_file("file.vdif");
+	
+	
+	close(in);
+} 
+\end{lstlisting} 
+
+In \lstinline{StreamMode}, the expected interaction is that a user will initialise an (initially empty) \lstinline{InputStream} using the \lstinline{open_stream()} function and then push raw data into it by monitoring a specific port or piping from another process.
+
+\begin{lstlisting} 
+#include "vdifparse.h"
+
+int main() { 
+	// open new stream (most values remain unset)
+	struct InputStream* in = open_stream();
+	
+	
+	close(in);
+} 
+\end{lstlisting} 
+
+\section{Style and Conventions}
+
+\begin{itemize}
+	\item Type names are in PascalCase (e.g., \lstinline{InputStream}).
+	\item Function and variable names are in snake\_case (e.g., \lstinline{sample_rate}).
+\end{itemize}
+
+\section{Collected Prompts for Feedback}
+
+\begin{enumerate}
+	\item Nowadays, the most popular architectures (x86-64, IA-32, etc.) all use little-endianness. Can you think of a device or prospective used that would still require support for big-endianness?
+	\item In the current form, it is technically possible to use one \lstinline{InputStream} in both \lstinline{FileMode} and \lstinline{StreamMode} at different times (e.g., open a file and then later stream more data in). Can you think of any conceptual reasons to allow or disallow this?
+	\item In the style of \texttt{mark5access}, it may be advisable to add a domain marker such as a \lstinline{vp_} prefix to all types or functions, to prevents overloading when imported into other projects. Can you think of any reason not to do this?
+\end{enumerate}
+
+	
+\end{document}

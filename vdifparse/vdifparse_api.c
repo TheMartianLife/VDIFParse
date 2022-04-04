@@ -29,7 +29,14 @@ struct InputStream* open_file(char* file_path) {
     }
 
     parse_vdif_header(in);
+    return in;
+}
 
+struct InputStream* open_stream() {
+    struct InputStream* in;
+    in = (struct InputStream *)calloc(1, sizeof(struct InputStream));
+    in->mode = StreamMode;
+    // TODO: what else can we know at this point?
     return in;
 }
 

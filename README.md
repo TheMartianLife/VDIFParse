@@ -18,7 +18,7 @@ VDIFparse can be given data to parse in either of two ways: **from streamed or p
 **Usage with Live Data:** `StreamMode`
 
 ```c
-in = open_stream();
+struct InputStream* in = open_stream();
 
 close(in);
 ```
@@ -26,7 +26,7 @@ close(in);
 **Usage with Historical Data:** `FileMode`
 
 ```c
-in = open_file("input_file.vdif");
+struct InputStream* in = open_file("input_file.vdif");
 
 close(in);
 ```
