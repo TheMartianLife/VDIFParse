@@ -2,6 +2,7 @@
 
 # VDIFparse
 
+> :warning: **WARNING**: This project is in early development and is not yet suitable for public use. This repo is public for feedback purposes only.
 
 **© 2022 Mars Buttfield-Addison**
 
