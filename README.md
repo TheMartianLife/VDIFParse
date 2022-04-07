@@ -1,4 +1,4 @@
-<img align="right" width="240" src="docs/logo.png" style="padding:10px;">
+<img align="right" src="docs/logo.png" style="padding:10px;width:20%;">
 
 # VDIFparse
 
