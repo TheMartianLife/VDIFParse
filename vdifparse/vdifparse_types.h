@@ -38,17 +38,21 @@ enum ExtendedDataVersion {
 struct InputStream {
     enum InputMode mode;
     enum InputFormat format;
-    unsigned int format_version;
+    unsigned char format_version;
     unsigned char header_length;
     unsigned char valid_flag;
-    // TODO: reference epoch + seconds offset
+    unsigned long int seconds_from_epoch;
+    unsigned short int reference_epoch_year;
+    unsigned char reference_epoch_month;
+    unsigned long int frame_number;
     unsigned long int frame_length;
     enum DataType data_type;
     unsigned long int num_channels;
     unsigned int bits_per_sample;
+    unsigned short int thread_id;
     char* station_id; // unsigned 16-bit int or 2-char ASCII
-    // TODO: middle fields
     unsigned int extended_data_version;
+    // TODO: CODIF/EDV fields
 
     unsigned long int frame_header_length;
     unsigned long int frame_data_length;

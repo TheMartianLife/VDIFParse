@@ -11,9 +11,4 @@ int main(int argc, char *argv[]) {
     struct InputStream* in2 = open_file(test_file_path2);
     print_attributes(in2);
     printf("\n");
-
-    char* test_file_path3 = "/Users/mars/Downloads/sample.vdif";
-    struct InputStream* in3 = open_file(test_file_path3);
-    print_attributes(in3);
-    printf("\n");
 }
