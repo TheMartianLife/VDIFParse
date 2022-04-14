@@ -18,8 +18,6 @@ VDIFparse can be given data to parse in either of two ways:
 
 These loosely correlate with the two ways a user is likely to interact with VDIF data: **live** (as data comes in from a telescope or similar source) or **later** (on historical data at rest).
 
-# Usage
-
 **Data Input**
 
 ```c
