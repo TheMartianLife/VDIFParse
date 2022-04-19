@@ -17,36 +17,96 @@
 
 #include "vdifparse_api.h"
 
-struct InputStream* open_file(char* file_path) {
-    struct InputStream* in;
-    in = (struct InputStream *)calloc(1, sizeof(struct InputStream));
-    in->mode = FileMode;
-
+struct DataStream* open_file(char* file_path, enum InputFormat format) {
+    struct DataStream* in = _init_stream(FileMode, format);
     open_file_input(in, file_path);
-    if (in->input_file_handle == NULL) { // check it actually opened
+    if (in->_input_file_handle == NULL) { // check it actually opened
         fprintf(vp_stderr, "File %s could not be opened.", file_path);
         exit(1); // TODO: make this recoverable maybe?
     }
-
-    parse_vdif_header(in);
+    // TODO: init threat atributes
     return in;
 }
 
-struct InputStream* open_stream() {
-    struct InputStream* in;
-    in = (struct InputStream *)calloc(1, sizeof(struct InputStream));
-    in->mode = StreamMode;
-    // TODO: what else can we know at this point?
-    return in;
+
+struct DataStream* open_sink(struct DataStream* in, enum InputFormat format) {
+    return _init_stream(StreamMode, format);
 }
 
-void set_gap_policy(struct InputStream* in, enum GapPolicy policy) {
+
+void set_thread_attributes(struct DataStream* in, unsigned short thread_num, float frequency, float bandwidth, char* channel_name) {
+    struct ThreadAttributes* attrs = in->thread_attrs[thread_num];
+    if (!attrs) {
+        attrs =  _init_thread_attributes();
+    }
+    attrs->frequency = frequency;
+    attrs->bandwidth = bandwidth;
+    attrs->channel_name = channel_name;
+    in->thread_attrs[thread_num] = attrs;
+}
+
+
+void set_gap_policy(struct DataStream* in, enum GapPolicy policy) {
     in->gap_policy = policy;
 }
 
-void close(struct InputStream* in) {
-    if (in->input_file_handle != NULL) {
-        fclose(in->input_file_handle);
+
+void set_cursor(struct DataStream* in, unsigned int epoch, unsigned long int second) {
+
+}
+
+
+void ingest_data(struct DataStream* in, unsigned int num_bytes, char** data) {
+
+}
+
+
+void select_thread(struct DataStream* in, unsigned short thread_num) {
+
+}
+
+void select_all_threads(struct DataStream* in) {
+
+}
+
+
+struct ThreadAttributes* get_thread_attributes(struct DataStream* in, unsigned short thread_num) {
+    return in->thread_attrs[thread_num]
+}
+
+
+enum GapPolicy get_gap_policy(struct DataStream* in) {
+    return in->gap_policy;
+}
+
+unsigned long int* get_cursor(struct DataStream* in) {
+
+}
+
+
+unsigned short* get_selected_threads(struct DataStream* in) {
+
+}
+
+
+void read_frames(struct DataStream* in, unsigned int num_frames, char** out) {
+
+}
+
+
+struct DataStream** separate_threads(struct DataStream* in) {
+
+}
+
+
+void decode_samples(struct DataStream* in, unsigned long int num_samples, float** out, unsigned long int** valid_samples) {
+
+}
+
+
+void close(struct DataStream* in) {
+    if (in->_input_file_handle != NULL) {
+        fclose(in->_input_file_handle);
     }
 
     // TODO: free memory

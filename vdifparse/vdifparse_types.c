@@ -16,3 +16,30 @@
 // this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "vdifparse_types.h"
+
+#define MAX_THREADS 1024
+
+
+struct DataStream* _init_stream(enum InputMode mode, enum InputFormat format, unsigned int buffer_size) {
+    struct DataStream* in;
+    in = (struct DataStream *)calloc(1, sizeof(struct DataStream));
+    in->mode = mode;
+    // init thread atributes structures
+    in->thread_attrs = (struct ThreadAttributes **)calloc(MAX_THREADS, sizeof(struct ThreadAttributes*));
+    if (mode == FileMode) {
+        // open file, inspect attributes
+    }
+    return in;
+}
+
+
+struct ThreadAttributes* _init_thread_attributes() {
+    struct ThreadAttributes* attrs;
+    attrs = (struct ThreadAttributes *)calloc(1, sizeof(struct ThreadAttributes)); 
+    return attrs;
+}
+
+
+void print_attributes(struct DataStream* in, unsigned short int thread_num) {
+    // TODO
+}

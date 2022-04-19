@@ -18,6 +18,10 @@
 #define VDIFPARSE_TYPES_H
 
 #include <stdio.h>
+#include <stdlib.h>
+
+#define vp_stdout stdout // TODO: remove
+#define vp_stderr stderr // TODO: remove
 
 enum InputMode { FileMode, StreamMode };
 enum InputFormat { VDIF, VDIF_LEGACY, CODIF };
@@ -27,43 +31,60 @@ enum GapPolicy  { SkipInvalid, InsertInvalid };
 // may need different cases for different VDIF versions in the future
 // for current keys, see https://vlbi.org/vlbi-standards/vdif/
 enum ExtendedDataVersion { 
-    None = 0, 
-    NICT = 1, 
-    ALMA = 2, 
-    NRAO = 3, 
-    CornerTurned = 4, 
-    Haystack = 171,
+    None = 0,       // see vlbi.org/wp-content/uploads/ ...
+    NICT = 1,       // ... /2019/03/vdif_extension_0x01.pdf
+    ALMA = 2,       // ... /2019/03/alma-vdif-edv.pdf
+    NRAO = 3,       // ... /2019/03/vdif_extension_0x03.pdf
+    Multiplex = 4,  // ... /2019/03/edv4description.pdf
+    Haystack = 171, // ... /2019/03/vdif_extension_0xab.pdf
 };
 
-struct InputStream {
-    enum InputMode mode;
-    enum InputFormat format;
-    unsigned char format_version;
-    unsigned char header_length;
-    unsigned char valid_flag;
-    unsigned long int seconds_from_epoch;
-    unsigned short int reference_epoch_year;
-    unsigned char reference_epoch_month;
-    unsigned long int frame_number;
-    unsigned long int frame_length;
-    enum DataType data_type;
+
+// All Data Frames must have the same Data Frame Header length, Data Array length, #channels, #bit/sample and Station ID.
+
+struct DataStream {
+    // fields that remain the same between frames and data threads
+    enum InputMode mode; // StreamMode (inits empty) or FileMode (opens file)
+    enum InputFormat format; // file format (VDIF, CODIF, VDIF_LEGACY)
+    unsigned char frame_header_length; // size of frame header in bytes
+
+    struct ThreadAttributes** thread_attrs; // information about each thread
+    enum GapPolicy gap_policy; // how invalid samples should be treated
+
+    // internal (utility) attributes
+    unsigned int _cursor_epoch;
+    unsigned long int _cursor_second;
+    FILE* _input_file_handle;
+    const unsigned char* _raw_data_buffer;
+};
+
+struct ThreadAttributes {
+    // information gleaned from headers
+    unsigned char format_version; // version of VDIF/CODIF used
+    unsigned long int frame_length; // size of frame in bytes, incl. header
     unsigned long int num_channels;
     unsigned int bits_per_sample;
-    unsigned short int thread_id;
-    char* station_id; // unsigned 16-bit int or 2-char ASCII
+    char* station_id; // 16-bit uint or 2-char ASCII code of source device(s)
     unsigned int extended_data_version;
+    // fields that change between frames
+    unsigned char valid_flag; // 0 if source device(s) detected malformation
+    unsigned long int seconds_from_epoch;
+    unsigned int reference_epoch;
+    unsigned long int frame_number;
+    enum DataType data_type; // whether data represents real or complex numbers
+    unsigned short int thread_id;
     // TODO: CODIF/EDV fields
-
-    unsigned long int frame_header_length;
-    unsigned long int frame_data_length;
     unsigned long int sample_rate;
     unsigned char* station_name;
 
-    enum GapPolicy gap_policy;
+    float frequency;
+    float bandwidth;
+    unsigned char* channel_name;
 
-    const unsigned char* raw_data_buffer;
-
-    FILE *input_file_handle;
 };
+
+struct DataStream* _init_stream();
+struct ThreadAttributes* _init_thread_attributes();
+void print_attributes(struct DataStream* in, unsigned short int thread_num);
 
 #endif // VDIFPARSE_TYPES_H

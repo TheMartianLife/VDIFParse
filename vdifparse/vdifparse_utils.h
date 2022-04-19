@@ -17,19 +17,16 @@
 #ifndef VDIFPARSE_UTILS_H
 #define VDIFPARSE_UTILS_H
 
-#include "vdifparse_types.h"
-
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
-#define vp_stdout stdout // TODO: remove
-#define vp_stderr stderr // TODO: remove
+#include "vdifparse_types.h"
 
 #define _1e9 1000000000
 #define _1e6 1000000
 #define _1e3 1000
 
-void print_attributes(struct InputStream* in);
 char* string_for_input_format(enum InputFormat format);
 char* string_for_data_type(enum DataType type);
 char* string_for_edv(enum ExtendedDataVersion version);

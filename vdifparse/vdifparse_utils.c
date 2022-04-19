@@ -17,26 +17,18 @@
 
 #include "vdifparse_utils.h"
 
-void print_attributes(struct InputStream* in) {
-    fprintf(vp_stdout, "Format: %s\n", string_for_input_format(in->format));
-    fprintf(vp_stdout, "Valid flag: %d\n", !(in->valid_flag));
-    fprintf(vp_stdout, "Time from epoch: %ld\n", in->seconds_from_epoch);
-    fprintf(vp_stdout, "Reference epoch: %d-%02d-01\n", in->reference_epoch_year, in->reference_epoch_month);
-    fprintf(vp_stdout, "Data frame number: %ld\n", in->frame_number);
-    fprintf(vp_stdout, "Format version: %d\n", in->format_version);
-    fprintf(vp_stdout, "Channels: %ld\n", in->num_channels);
-    fprintf(vp_stdout, "Frame length: %ld bytes \n", in->frame_length);
-    fprintf(vp_stdout, "Data type: %s numbers\n", string_for_data_type(in->data_type));
-    fprintf(vp_stdout, "Bits per sample: %d\n", in->bits_per_sample);
-    fprintf(vp_stdout, "Thread ID: %d\n", in->thread_id);
-    fprintf(vp_stdout, "Station ID: %s\n", in->station_id);
-    unsigned int edv = in->extended_data_version;
-    fprintf(vp_stdout, "EDV: %d (%s)\n", edv, string_for_edv(edv));
-    if (in->sample_rate != 0) {
-        char* frequency = string_for_frequency(in->sample_rate);
-        fprintf(vp_stdout, "Sample rate: %s", frequency);
-    }
+
+char* time_for_epoch_seconds(unsigned int epoch, unsigned long int seconds) {
+    unsigned int year = 2000 + (epoch / 2);
+    unsigned int month = 1 + ((epoch % 2) * 6);
+    char* iso_epoch= sprintf("%d-%d-01T00:00:00+0000", year, month);
+    struct tm tm; // make a time object
+    strptime(iso_epoch, "%Y-%m-%dT%H:%m::%S%z", &tm);
+    // TODO check leap seconds in C time_t handling
+    tm.tm_sec += seconds;
+    return mktime(&tm);
 }
+
 
 char* string_for_input_format(enum InputFormat format) {
     switch (format) {
@@ -46,6 +38,7 @@ char* string_for_input_format(enum InputFormat format) {
     }
 }
 
+
 char* string_for_data_type(enum DataType type) {
     switch (type) {
         case RealData: return "real";
@@ -53,16 +46,18 @@ char* string_for_data_type(enum DataType type) {
     }
 }
 
+
 char* string_for_edv(enum ExtendedDataVersion version) {
     switch (version) {
         case None: return "None"; 
         case NICT: return "NICT"; 
         case ALMA: return "ALMA";
         case NRAO: return "NRAO";
-        case CornerTurned: return "Corner Turned";
+        case Multiplex: return "Multiplex";
         case Haystack: return "Haystack";
     }
 }
+
 
 char* string_for_frequency(unsigned long int frequency) {
     char* string = (char*)malloc(128 * sizeof(char));

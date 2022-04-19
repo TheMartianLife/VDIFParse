@@ -29,12 +29,15 @@
 #define ASCII_0 0x30
 
 void parse_vdif_header(struct InputStream* in);
-void parse_codif_header(struct InputStream* in);
+void update_vdif_header_attributes(struct InputStream* in);
 void parse_vdif_extended_data(struct InputStream* in);
 void parse_vdif_extended_data_nict(struct InputStream* in);
 void parse_vdif_extended_data_alma(struct InputStream* in);
 void parse_vdif_extended_data_nrao(struct InputStream* in);
 void parse_vdif_extended_data_corner_turned(struct InputStream* in);
 void parse_vdif_extended_data_haystack(struct InputStream* in);
+
+void parse_codif_header(struct InputStream* in);
+void update_codif_header_attributes(struct InputStream* in);
 
 #endif // VDIFPARSE_HEADERS_H

@@ -17,10 +17,17 @@
 #ifndef VDIFPARSE_INPUT_H
 #define VDIFPARSE_INPUT_H
 
-#include "vdifparse_utils.h"
-
 #include <stdio.h>
 
-void open_file_input(struct InputStream* in, char* file_path);
+#include "vdifparse_headers.h"
+#include "vdifparse_types.h"
+#include "vdifparse_utils.h"
+
+#define BUFFER_SIZE 104857600 // 100MB
+#define DEFAULT_HEADER_SIZE 32
+
+
+void open_file_input(struct DataStream* in, char* file_path);
+void buffer_frames(struct DataStream* in);
 
 #endif // VDIFPARSE_INPUT_H

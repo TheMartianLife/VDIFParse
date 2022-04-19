@@ -23,21 +23,42 @@
 #include "vdifparse_utils.h"
 
 // initialise stream object
-struct InputStream* open_file(char* file_path);
-struct InputStream* open_stream();
+struct DataStream* open_file(char* file_path, enum InputFormat format);
+struct DataStream* open_stream(enum InputFormat format);
 
 // configure stream
-void set_gap_policy(struct InputStream* in, enum GapPolicy policy);
+void set_thread_attributes(struct DataStream* in, unsigned short thread_num, float frequency, float bandwidth, char* channel_name);
+void set_gap_policy(struct DataStream* in, enum GapPolicy policy);
+void set_cursor(struct DataStream* in, unsigned int epoch, unsigned long int second);
+
+// populate stream
+void ingest_data(struct DataStream* in, unsigned int num_bytes, char** data);
+
+// configure output
+void select_thread(struct DataStream* in, unsigned short thread_num);
+void select_all_threads(struct DataStream* in);
+
+// check stream configuration
+struct ThreadAttributes* get_thread_attributes(struct DataStream* in, unsigned short thread_num);
+enum GapPolicy get_gap_policy(struct DataStream* in);
+unsigned long int get_cursor(struct DataStream* in);
+unsigned short* get_selected_threads(struct DataStream* in);
 
 // validity checks
 
-// configure output
 
 // prepare for output
 
+
+// move data around
+void read_frames(struct DataStream* in, unsigned int num_frames, char** out);
+struct DataStream** separate_threads(struct DataStream* in);
+
 // process data
+void decode_samples(struct DataStream* in, unsigned long int num_samples, float** out, unsigned long int** valid_samples);
+
 
 // cleanup
-void close(struct InputStream* in);
+void close(struct DataStream* in);
 
 #endif // VDIFPARSE_API_H
