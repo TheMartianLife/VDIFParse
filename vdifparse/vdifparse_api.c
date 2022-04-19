@@ -35,14 +35,14 @@ struct DataStream* open_sink(struct DataStream* in, enum InputFormat format) {
 
 
 void set_thread_attributes(struct DataStream* in, unsigned short thread_num, float frequency, float bandwidth, char* channel_name) {
-    struct ThreadAttributes* attrs = in->thread_attrs[thread_num];
-    if (!attrs) {
-        attrs =  _init_thread_attributes();
+    struct DataThread* thread = in->threads[thread_num];
+    if (!thread) {
+        thread =  _init_thread_attributes();
     }
-    attrs->frequency = frequency;
-    attrs->bandwidth = bandwidth;
-    attrs->channel_name = channel_name;
-    in->thread_attrs[thread_num] = attrs;
+    thread->frequency = frequency;
+    thread->bandwidth = bandwidth;
+    thread->channel_name = channel_name;
+    in->threads[thread_num] = thread;
 }
 
 
@@ -71,7 +71,7 @@ void select_all_threads(struct DataStream* in) {
 
 
 struct ThreadAttributes* get_thread_attributes(struct DataStream* in, unsigned short thread_num) {
-    return in->thread_attrs[thread_num]
+    return in->threads[thread_num]
 }
 
 

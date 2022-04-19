@@ -1,4 +1,4 @@
-// vdifparse_types.c - defines the InputStream type and associated enum types
+// vdifparse_types.c - defines the DataStream type and associated enum types
 // used throughout the library.
 // Copyright (C) 2022 Mars Buttfield-Addison
 //
@@ -25,7 +25,7 @@ struct DataStream* _init_stream(enum InputMode mode, enum InputFormat format, un
     in = (struct DataStream *)calloc(1, sizeof(struct DataStream));
     in->mode = mode;
     // init thread atributes structures
-    in->thread_attrs = (struct ThreadAttributes **)calloc(MAX_THREADS, sizeof(struct ThreadAttributes*));
+    in->threads = (struct DataThread **)calloc(MAX_THREADS, sizeof(struct DataThread*));
     if (mode == FileMode) {
         // open file, inspect attributes
     }
@@ -33,10 +33,10 @@ struct DataStream* _init_stream(enum InputMode mode, enum InputFormat format, un
 }
 
 
-struct ThreadAttributes* _init_thread_attributes() {
-    struct ThreadAttributes* attrs;
-    attrs = (struct ThreadAttributes *)calloc(1, sizeof(struct ThreadAttributes)); 
-    return attrs;
+struct DataThread* _init_thread() {
+    struct DataThread* thread;
+    thread = (struct DataThread *)calloc(1, sizeof(struct DataThread)); 
+    return thread;
 }
 
 

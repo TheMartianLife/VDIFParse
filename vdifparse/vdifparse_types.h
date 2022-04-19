@@ -1,4 +1,4 @@
-// vdifparse_types.h - defines the InputStream type and associated enum types
+// vdifparse_types.h - defines the DataStream type and associated enum types
 // used throughout the library.
 // Copyright (C) 2022 Mars Buttfield-Addison
 //
@@ -48,34 +48,18 @@ struct DataStream {
     enum InputFormat format; // file format (VDIF, CODIF, VDIF_LEGACY)
     unsigned char frame_header_length; // size of frame header in bytes
 
-    struct ThreadAttributes** thread_attrs; // information about each thread
+    struct DataThread** threads; // information about each thread
     enum GapPolicy gap_policy; // how invalid samples should be treated
 
-    // internal (utility) attributes
-    unsigned int _cursor_epoch;
-    unsigned long int _cursor_second;
     FILE* _input_file_handle;
-    const unsigned char* _raw_data_buffer;
 };
 
-struct ThreadAttributes {
-    // information gleaned from headers
-    unsigned char format_version; // version of VDIF/CODIF used
+struct DataThread {
     unsigned long int frame_length; // size of frame in bytes, incl. header
     unsigned long int num_channels;
     unsigned int bits_per_sample;
     char* station_id; // 16-bit uint or 2-char ASCII code of source device(s)
-    unsigned int extended_data_version;
-    // fields that change between frames
-    unsigned char valid_flag; // 0 if source device(s) detected malformation
-    unsigned long int seconds_from_epoch;
-    unsigned int reference_epoch;
-    unsigned long int frame_number;
-    enum DataType data_type; // whether data represents real or complex numbers
-    unsigned short int thread_id;
-    // TODO: CODIF/EDV fields
-    unsigned long int sample_rate;
-    unsigned char* station_name;
+
 
     float frequency;
     float bandwidth;
@@ -83,8 +67,21 @@ struct ThreadAttributes {
 
 };
 
+struct DataFrame {
+    unsigned char format_version; // version of VDIF/CODIF used
+    unsigned char valid_flag; // 0 if source device(s) detected malformation
+    unsigned long int seconds_from_epoch;
+    unsigned int reference_epoch;
+    unsigned long int frame_number;
+    enum DataType data_type; // whether data represents real or complex numbers
+    unsigned int extended_data_version;
+    // TODO: CODIF/EDV fields
+    unsigned long int sample_rate;
+    unsigned char* station_name;
+};
+
 struct DataStream* _init_stream();
-struct ThreadAttributes* _init_thread_attributes();
+struct DataThread* _init_thread();
 void print_attributes(struct DataStream* in, unsigned short int thread_num);
 
 #endif // VDIFPARSE_TYPES_H

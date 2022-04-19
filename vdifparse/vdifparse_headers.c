@@ -17,15 +17,15 @@
 
 #include "vdifparse_headers.h"
 
-void parse_vdif_header(struct InputStream* in) {
+void parse_vdif_header(struct DataStream* in) {
         // TODO invariant fields
 }
 
-void update_vdif_header_attributes(struct InputStream* in) {
+void update_vdif_header_attributes(struct DataStream* in) {
     // TODO variant fields
 }
 
-void parse_vdif_extended_data(struct InputStream* in) {
+void parse_vdif_extended_data(struct DataStream* in) {
     switch (in->extended_data_version) {
         case None: return;
         case NICT: parse_vdif_extended_data_nict(in);
@@ -37,7 +37,7 @@ void parse_vdif_extended_data(struct InputStream* in) {
 }
 
 
-void parse_vdif_extended_data_nict(struct InputStream* in) {
+void parse_vdif_extended_data_nict(struct DataStream* in) {
     unsigned int *header_words = (unsigned int *)(in->_raw_data_buffer);
     // WORD 4, BYTES 7-0
     unsigned int word4 = header_words[4];
@@ -50,7 +50,7 @@ void parse_vdif_extended_data_nict(struct InputStream* in) {
 }
 
 
-void parse_vdif_extended_data_alma(struct InputStream* in) {
+void parse_vdif_extended_data_alma(struct DataStream* in) {
     unsigned int *header_words = (unsigned int *)(in->_raw_data_buffer);
     // WORD 4, BYTES 7-0
     unsigned int word4 = header_words[4];
@@ -63,7 +63,7 @@ void parse_vdif_extended_data_alma(struct InputStream* in) {
 }
 
 
-void parse_vdif_extended_data_nrao(struct InputStream* in) {
+void parse_vdif_extended_data_nrao(struct DataStream* in) {
     unsigned int *header_words = (unsigned int *)(in->_raw_data_buffer);
     // WORD 4, BYTES 7-0
     unsigned int word4 = header_words[4];
@@ -76,7 +76,7 @@ void parse_vdif_extended_data_nrao(struct InputStream* in) {
 }
 
 
-void parse_vdif_extended_data_corner_turned(struct InputStream* in) {
+void parse_vdif_extended_data_corner_turned(struct DataStream* in) {
     unsigned int *header_words = (unsigned int *)(in->_raw_data_buffer);
     // WORD 4, BYTES 7-0
     unsigned int word4 = header_words[4];
@@ -89,7 +89,7 @@ void parse_vdif_extended_data_corner_turned(struct InputStream* in) {
 }
 
 
-void parse_vdif_extended_data_haystack(struct InputStream* in) {
+void parse_vdif_extended_data_haystack(struct DataStream* in) {
     unsigned int *header_words = (unsigned int *)(in->_raw_data_buffer);
     // WORD 4, BYTES 7-0
     unsigned int word4 = header_words[4];
@@ -102,7 +102,7 @@ void parse_vdif_extended_data_haystack(struct InputStream* in) {
 }
 
 
-void parse_codif_header(struct InputStream* in) {
+void parse_codif_header(struct DataStream* in) {
     unsigned int *header_words = (unsigned int *)(in->_raw_data_buffer);
     in->format = CODIF;
 
@@ -116,6 +116,6 @@ void parse_codif_header(struct InputStream* in) {
     unsigned int word7 = header_words[7];
 }
 
-void update_codif_header_attributes(struct InputStream* in) {
+void update_codif_header_attributes(struct DataStream* in) {
     // TODO
 }
