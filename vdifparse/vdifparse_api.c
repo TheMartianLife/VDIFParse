@@ -23,7 +23,7 @@ struct DataStream* open_file(char* file_path, enum DataFormat format) {
     ds->format = format;
     open_file_input(ds, file_path);
     if (ds->_input_file_handle == NULL) { // check it actually opened
-        fprintf(vp_stderr, "File %s could not be opened.", file_path);
+        fprintf(vperr, "File %s could not be opened.", file_path);
         exit(1); // TODO: make this recoverable maybe?
     }
     return ds;
@@ -39,14 +39,40 @@ struct DataStream* open_sink(enum DataFormat format) {
 
 
 void set_thread_attributes(struct DataStream* ds, unsigned short thread_id, float frequency, float bandwidth, char* channel_name) {
-    struct DataThread* thread = ds->threads[thread_id];
-    if (!thread) {
-        thread =  _init_thread_attributes();
+    if (thread_id >= MAX_DATA_THREADS) {
+        raise_exception("thread_id %d exceeds maximum thread_id %d", thread_id, MAX_DATA_THREADS);
     }
-    thread->frequency = frequency;
-    thread->bandwidth = bandwidth;
-    thread->channel_name = channel_name;
-    ds->threads[thread_id] = thread;
+    struct DataThread* dt = ds->threads[thread_id];
+    if (!dt) { // if thread doesn't exist yet
+        dt =  _init_thread();
+        ds->threads[thread_id] = dt;
+    }
+    set_channel_attributes(ds, thread_id, 0, frequency, bandwidth, channel_name);
+    // TODO make this propagate once dt->num_channels is known
+}
+
+void set_channel_attributes(struct DataStream* ds, unsigned short thread_id, unsigned long channel_num, float frequency, float bandwidth, char* channel_name) {
+    if (thread_id >= MAX_DATA_THREADS) {
+        raise_exception("thread_id %d exceeds maximum thread_id %d", thread_id, MAX_DATA_THREADS);
+    }
+    struct DataThread* dt = ds->threads[thread_id];
+    struct DataChannel* dc;
+    if (!dt) { // if thread doesn't exist yet
+        dt =  _init_thread();
+        ds->threads[thread_id] = dt;
+    }
+    if (!dt->channels) { // if thread channels don't exist yet
+        struct DataChannel** dcs = (struct DataChannel**)calloc(dt->num_channels, sizeof(struct DataChannel*));
+        dt->channels = dcs;
+    }
+    // TODO error if channel num too high
+    if (!dt->channels[channel_num]) { // if this channel doesn't exist yet
+        dc = _init_channel();
+        dt->channels[channel_num] = dc;
+    }
+    dc->frequency = frequency;
+    dc->bandwidth = bandwidth;
+    dc->name = channel_name;
 }
 
 
@@ -75,6 +101,9 @@ void select_all_threads(struct DataStream* ds) {
 
 
 struct DataThread* get_thread_attributes(struct DataStream* ds, unsigned short thread_id) {
+    if (thread_id >= MAX_DATA_THREADS) {
+        raise_exception("thread_id %d exceeds maximum thread_id %d", thread_id, MAX_DATA_THREADS);
+    }
     return ds->threads[thread_id];
 }
 

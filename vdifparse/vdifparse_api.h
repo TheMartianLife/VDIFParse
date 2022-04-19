@@ -28,7 +28,7 @@ struct DataStream* open_sink(enum DataFormat format);
 
 // configure stream
 void set_thread_attributes(struct DataStream* ds, unsigned short thread_id, float frequency, float bandwidth, char* channel_name);
-void set_channel_attributes(struct DataStream* ds, unsigned short thread_id, unsigned long channel_num, unsigned float frequency, float bandwidth, char* channel_name);
+void set_channel_attributes(struct DataStream* ds, unsigned short thread_id, unsigned long channel_num, float frequency, float bandwidth, char* channel_name);
 void set_gap_policy(struct DataStream* ds, enum GapPolicy policy);
 void seek_to(struct DataStream* ds, unsigned int epoch, unsigned long second);
 

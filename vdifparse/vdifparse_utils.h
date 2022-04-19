@@ -18,6 +18,7 @@
 #define VDIFPARSE_UTILS_H
 
 #include <stdlib.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -25,6 +26,8 @@
 
 #define vpout stdout // TODO: remove
 #define vperr stderr // TODO: remove
+
+void raise_exception(const char *format, ...);
 
 void print_stream_attributes(struct DataStream* ds);
 void print_thread_attributes(struct DataThread* dt);

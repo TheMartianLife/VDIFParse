@@ -21,7 +21,8 @@
 struct DataStream* _init_stream() {
     struct DataStream* ds;
     ds = (struct DataStream*)calloc(1, sizeof(struct DataStream));
-    ds->frame_buffer = (struct DataFrame*)calloc(20, sizeof(struct DataFrame));
+    ds->_frame_buffer = (struct DataFrame*)calloc(20, sizeof(struct DataFrame));
+    ds->threads = (struct DataThread**)calloc(MAX_DATA_THREADS, sizeof(struct DataThread*));
     return ds;
 }
 
@@ -41,7 +42,7 @@ struct DataChannel* _init_channel() {
 
 
 struct DataFrame* _init_frame() {
-    struct DataThread* df;
+    struct DataFrame* df;
     df = (struct DataFrame*)calloc(1, sizeof(struct DataFrame));
     return df;
 }

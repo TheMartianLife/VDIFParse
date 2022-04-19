@@ -17,6 +17,8 @@
 
 #include "vdifparse_input.h"
 
+#define DEFAULT_HEADER_LENGTH 32
+
 
 void open_file_input(struct DataStream* ds, char* file_path) {
     // open file in binary mode
@@ -26,23 +28,35 @@ void open_file_input(struct DataStream* ds, char* file_path) {
     }
 
     // read first header from file
-    unsigned char* first_header = malloc(DEFAULT_HEADER_SIZE);
-    fread(first_header, DEFAULT_HEADER_SIZE, 1, ds->_input_file_handle);
-    struct DataFrame* df = parse_vdif_header(ds, first_header);
-    // now that we can know the frame size, load the first frame into buffer
+    unsigned char header_length = ds->frame_header_length;
+    if (header_length == 0) { 
+        header_length = DEFAULT_HEADER_LENGTH;
+    }
+    struct DataFrame* df = get_next_frame(ds, header_length);
+    ds->_frame_buffer = df;
+}
+
+struct DataFrame* get_next_frame(struct DataStream* ds, unsigned char header_length) {
+    unsigned char* first_header = malloc(header_length);
+    fread(first_header, header_length, 1, ds->_input_file_handle);
+    struct DataFrame* df = parse_vdif_header(ds, (unsigned int*)first_header);
+    if (ds->frame_header_length != header_length) {
+        // in case we consumed 32 bytes but the header was only 16
+        fseek(ds->_input_file_handle, ds->frame_header_length, SEEK_SET);
+    }
     unsigned long frame_length = ds->threads[df->thread_id]->frame_length;
     frame_length -= ds->frame_header_length;
-    unsigned char* first_frame = malloc(frame_length);
-    fread(first_frame, frame_length, 1, ds->_input_file_handle);
-    df->data_buffer = first_frame;
-    ds->frame_buffer = df;
+    unsigned char* frame_data = malloc(frame_length);
+    fread(frame_data, frame_length, 1, ds->_input_file_handle);
+    df->data_buffer = (unsigned int*)frame_data;
+    return df;
 }
 
 
-void buffer_frames(struct DataStream* ds) {
-    // buffer frame
-    unsigned short thread_id = 0; // TODO
-    if (is_selected_thread(ds, thread_id)) {
-        // append to thread buffer
-    }
-}
+// void buffer_frames(struct DataStream* ds) {
+//     // buffer frame
+//     unsigned short thread_id = 0; // TODO
+//     if (is_selected_thread(ds, thread_id)) {
+//         // append to thread buffer
+//     }
+// }

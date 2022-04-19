@@ -23,11 +23,8 @@
 #include "vdifparse_types.h"
 #include "vdifparse_utils.h"
 
-#define BUFFER_SIZE 104857600 // 100MB
-#define DEFAULT_HEADER_SIZE 32
-
 
 void open_file_input(struct DataStream* ds, char* file_path);
-void buffer_frames(struct DataStream* ds);
+struct DataFrame* get_next_frame(struct DataStream* ds, unsigned char header_length);
 
 #endif // VDIFPARSE_INPUT_H

@@ -27,13 +27,13 @@ struct DataFrame* parse_header(struct DataStream* ds, unsigned int* data) {
 }
 
 
-struct DataFrame* parse_vdif_header(struct DataStream* ds, unsigned int *data) {
+struct DataFrame* parse_vdif_header(struct DataStream* ds, unsigned int* data) {
     if (ds->frame_header_length == 0) {
         // stream fields are not set, so this must be the first header
         // let's get the fields that stay the same throughout a stream
         unsigned char legacy_mode = (unsigned char)((data[0] >> 30) & 0x2);
         ds->format = (legacy_mode) ? VDIF_LEGACY : VDIF;
-        ds->frame_header_length = (unsigned char)((legacy_mode) ? 32 : 16);
+        ds->frame_header_length = (unsigned char)((legacy_mode) ? 16 : 32);
     }
     unsigned short thread_id = (unsigned short)((data[3] >> 16) & 0x3ff);
     if (!ds->threads[thread_id]) {
@@ -86,84 +86,36 @@ void parse_vdif_extended_data(struct DataFrame* df) {
         case ALMA: parse_vdif_extended_data_alma(df);
         case NRAO: parse_vdif_extended_data_nrao(df);
         case Multiplex: parse_vdif_extended_data_corner_turned(df);
-        case Haystack: return parse_vdif_extended_data_haystack(df);
+        case Haystack: parse_vdif_extended_data_haystack(df);
     }
 }
 
 
 void parse_vdif_extended_data_nict(struct DataFrame* df) {
-    unsigned int *header_words = (unsigned int *)(df->_raw_data_buffer);
-    // WORD 4, BYTES 7-0
-    unsigned int word4 = header_words[4];
-    // WORD 5, BYTES 7-0
-    unsigned int word5 = header_words[5];
-    // WORD 6, BYTES 7-0
-    unsigned int word6 = header_words[6];
-    // WORD 7, BYTES 7-0
-    unsigned int word7 = header_words[7];
+
 }
 
 
 void parse_vdif_extended_data_alma(struct DataFrame* df) {
-    unsigned int *header_words = (unsigned int *)(df->_raw_data_buffer);
-    // WORD 4, BYTES 7-0
-    unsigned int word4 = header_words[4];
-    // WORD 5, BYTES 7-0
-    unsigned int word5 = header_words[5];
-    // WORD 6, BYTES 7-0
-    unsigned int word6 = header_words[6];
-    // WORD 7, BYTES 7-0
-    unsigned int word7 = header_words[7];
+
 }
 
 
 void parse_vdif_extended_data_nrao(struct DataFrame* df) {
-    unsigned int *header_words = (unsigned int *)(df->_raw_data_buffer);
-    // WORD 4, BYTES 7-0
-    unsigned int word4 = header_words[4];
-    // WORD 5, BYTES 7-0
-    unsigned int word5 = header_words[5];
-    // WORD 6, BYTES 7-0
-    unsigned int word6 = header_words[6];
-    // WORD 7, BYTES 7-0
-    unsigned int word7 = header_words[7];
+
 }
 
 
 void parse_vdif_extended_data_corner_turned(struct DataFrame* df) {
-    unsigned int *header_words = (unsigned int *)(df->_raw_data_buffer);
-    // WORD 4, BYTES 7-0
-    unsigned int word4 = header_words[4];
-    // WORD 5, BYTES 7-0
-    unsigned int word5 = header_words[5];
-    // WORD 6, BYTES 7-0
-    unsigned int word6 = header_words[6];
-    // WORD 7, BYTES 7-0
-    unsigned int word7 = header_words[7];
+
 }
 
 
 void parse_vdif_extended_data_haystack(struct DataFrame* df) {
-    unsigned int *header_words = (unsigned int *)(df->_raw_data_buffer);
-    // WORD 4, BYTES 7-0
-    unsigned int word4 = header_words[4];
-    // WORD 5, BYTES 7-0
-    unsigned int word5 = header_words[5];
-    // WORD 6, BYTES 7-0
-    unsigned int word6 = header_words[6];
-    // WORD 7, BYTES 7-0
-    unsigned int word7 = header_words[7];
+
 }
 
 
-struct DataFrame* parse_codif_header(struct DataStream* ds, unsigned int *data) {
-    // TODO
-    unsigned int word0 = data[0];
-    unsigned int word1 = data[1];
-    unsigned int word2 = data[2];
-    unsigned int word3 = data[3];
-    unsigned int word4 = data[4];
-    unsigned int word5 = data[5];
-    unsigned int word6 = data[6];
-    unsigned int word7 = data[7];
+struct DataFrame* parse_codif_header(struct DataStream* ds, unsigned int* data) {
+
 }

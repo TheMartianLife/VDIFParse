@@ -23,14 +23,9 @@
 #include "vdifparse_types.h"
 #include "vdifparse_utils.h"
 
-#define MAX_BITS_PER_SAMPLE 32
-#define MAX_DATA_THREADS 1024
-#define MAX_FRAME_LENGTH 134217728 // bytes
-#define ASCII_0 0x30
-
 struct DataFrame* parse_header(struct DataStream* ds, unsigned int* data);
 
-struct DataFrame* parse_vdif_header(struct DataStream* ds, unsigned int *data);
+struct DataFrame* parse_vdif_header(struct DataStream* ds, unsigned int* data);
 void parse_vdif_extended_data(struct DataFrame* df);
 void parse_vdif_extended_data_nict(struct DataFrame* df);
 void parse_vdif_extended_data_alma(struct DataFrame* df);
@@ -38,6 +33,6 @@ void parse_vdif_extended_data_nrao(struct DataFrame* df);
 void parse_vdif_extended_data_corner_turned(struct DataFrame* df);
 void parse_vdif_extended_data_haystack(struct DataFrame* df);
 
-struct DataFrame* parse_codif_header(struct DataStream* ds, unsigned int *data);
+struct DataFrame* parse_codif_header(struct DataStream* ds, unsigned int* data);
 
 #endif // VDIFPARSE_HEADERS_H

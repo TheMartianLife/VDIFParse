@@ -21,16 +21,28 @@
 #define _1e6 1000000
 #define _1e3 1000
 
-char* time_for_epoch_seconds(unsigned int epoch, unsigned long seconds) {
+
+void raise_exception(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    fprintf(vperr, format, args);
+    va_end(args);
+    exit(EXIT_FAILURE);
+}
+
+
+time_t time_for_epoch_seconds(unsigned int epoch, unsigned long seconds) {
     unsigned int year = 2000 + (epoch / 2);
     unsigned int month = 1 + ((epoch % 2) * 6);
-    char* iso_epoch= sprintf("%d-%d-01T00:00:00+0000", year, month);
+    char* iso_epoch = (char*)malloc(32 * sizeof(char));
+    sprintf(iso_epoch, "%d-%d-01T00:00:00+0000", year, month);
     struct tm tm; // make a time object
     strptime(iso_epoch, "%Y-%m-%dT%H:%m::%S%z", &tm);
     // TODO check leap seconds in C time_t handling
     tm.tm_sec += seconds;
     return mktime(&tm);
 }
+
 
 char* string_for_input_mode(enum InputMode mode) {
     switch (mode) {
@@ -99,21 +111,25 @@ char* string_for_hertz(unsigned long hertz) {
 
 
 void print_stream_attributes(struct DataStream* ds) {
-    fprintf(vpout, "DataStream (%s)", string_for_input_mode(ds->mode));
-    fprintf(vpout, "Data format: %s", string_for_data_format(ds->format));
-    fprintf(vpout, "Header length: %d bytes", ds->frame_header_length);
-    if (ds->all_threads_selected) {
-        fprintf(vpout, "Threads selected: ALL");
+    fprintf(vpout, "DataStream (%s)\n", string_for_input_mode(ds->mode));
+    fprintf(vpout, "- Data format: %s\n", string_for_data_format(ds->format));
+    fprintf(vpout, "- Header length: %d bytes\n", ds->frame_header_length);
+    if (ds->_all_threads_selected) {
+        fprintf(vpout, "- Threads selected: ALL\n");
     } else {
-        fprintf(vpout, "Threads selected: %d", ds->num_selected_threads);
+        fprintf(vpout, "- Threads selected: %d\n", ds->_num_selected_threads);
     }
-    fprintf(vpout, "Gap policy: %s", string_for_gap_policy(ds->gap_policy));
+    fprintf(vpout, "- Gap policy: %s\n", string_for_gap_policy(ds->gap_policy));
 
 }
 
 
 void print_thread_attributes(struct DataThread* dt) {
-    // TODO
+    fprintf(vpout, "DataThread %d\n", dt->thread_id);
+    fprintf(vpout, "- Frame length: %ld bytes\n", dt->frame_length);
+    fprintf(vpout, "- Channels: %ld\n", dt->num_channels);
+    fprintf(vpout, "- Bits per sample: %d bit(s)\n", dt->bits_per_sample);
+    fprintf(vpout, "- Station ID: %s\n", dt->station_id);
 }
 
 

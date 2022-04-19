@@ -20,6 +20,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAX_BITS_PER_SAMPLE 32
+#define MAX_DATA_THREADS 1024
+#define MAX_FRAME_LENGTH 134217728 // bytes
+#define ASCII_0 0x30
+
 enum InputMode { FileMode, StreamMode };
 enum DataFormat { VDIF, VDIF_LEGACY, CODIF };
 enum DataType { RealData, ComplexData };
@@ -45,28 +50,30 @@ struct DataStream {
     enum DataFormat format; // file format (VDIF, CODIF, VDIF_LEGACY)
     unsigned char frame_header_length; // size of frame header in bytes
 
-    unsigned char all_threads_selected;
-    unsigned short num_selected_threads;
     unsigned short* selected_threads;
     struct DataThread** threads; // information about each thread
     enum GapPolicy gap_policy; // how invalid samples should be treated
 
-    struct DataFrame* frame_buffer;
-
+    
     FILE* _input_file_handle;
+    struct DataFrame* _frame_buffer;
+    unsigned char _all_threads_selected;
+    unsigned short _num_selected_threads;
 };
 
 struct DataThread {
+    unsigned short thread_id;
     unsigned long frame_length; // size of frame in bytes, incl. header
     unsigned long num_channels;
     unsigned int bits_per_sample;
     char* station_id; // 16-bit uint or 2-char ASCII code of source device(s)
 
     struct DataChannel** channels;
+    unsigned char _all_channels_set;
 };
 
 struct DataChannel {
-    unsigned char* name;
+    char* name;
     float frequency;
     float bandwidth;
 };
@@ -84,7 +91,7 @@ struct DataFrame {
     unsigned long sample_rate;
     unsigned char* station_name;
 
-    unsigned char* data_buffer;
+    unsigned int* data_buffer;
 };
 
 struct DataStream* _init_stream();
