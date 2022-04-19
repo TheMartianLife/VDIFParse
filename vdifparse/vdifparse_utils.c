@@ -17,8 +17,11 @@
 
 #include "vdifparse_utils.h"
 
+#define _1e9 1000000000
+#define _1e6 1000000
+#define _1e3 1000
 
-char* time_for_epoch_seconds(unsigned int epoch, unsigned long int seconds) {
+char* time_for_epoch_seconds(unsigned int epoch, unsigned long seconds) {
     unsigned int year = 2000 + (epoch / 2);
     unsigned int month = 1 + ((epoch % 2) * 6);
     char* iso_epoch= sprintf("%d-%d-01T00:00:00+0000", year, month);
@@ -29,8 +32,15 @@ char* time_for_epoch_seconds(unsigned int epoch, unsigned long int seconds) {
     return mktime(&tm);
 }
 
+char* string_for_input_mode(enum InputMode mode) {
+    switch (mode) {
+        case FileMode: return "FileMode";
+        case StreamMode: return "StreamMode";
+    }
+}
 
-char* string_for_input_format(enum InputFormat format) {
+
+char* string_for_data_format(enum DataFormat format) {
     switch (format) {
         case VDIF: return "VDIF";
         case CODIF: return "CODIF";
@@ -43,6 +53,13 @@ char* string_for_data_type(enum DataType type) {
     switch (type) {
         case RealData: return "real";
         case ComplexData: return "complex";
+    }
+}
+
+char* string_for_gap_policy(enum GapPolicy policy) {
+    switch (policy) {
+        case SkipInvalid: return "SkipInvalid";
+        case InsertInvalid: return "InsertInvalid";
     }
 }
 
@@ -59,23 +76,47 @@ char* string_for_edv(enum ExtendedDataVersion version) {
 }
 
 
-char* string_for_frequency(unsigned long int frequency) {
+char* string_for_hertz(unsigned long hertz) {
     char* string = (char*)malloc(128 * sizeof(char));
     int whole, part = 0;
-    if (frequency > _1e9) {
-        whole = frequency / _1e9;
-        part = (frequency % _1e9) / _1e6;
+    if (hertz > _1e9) {
+        whole = hertz / _1e9;
+        part = (hertz % _1e9) / _1e6;
         sprintf(string, "%d.%d GHz", whole, part);
-    } else if (frequency > 1e6) {
-        whole = frequency / _1e6;
-        part = (frequency % _1e6) / _1e3;
+    } else if (hertz > 1e6) {
+        whole = hertz / _1e6;
+        part = (hertz % _1e6) / _1e3;
         sprintf(string, "%d.%d MHz", whole, part);
-    } else if (frequency > 1e3) {
-        whole = frequency / _1e3;
-        part = frequency % _1e3;
+    } else if (hertz > 1e3) {
+        whole = hertz / _1e3;
+        part = hertz % _1e3;
         sprintf(string, "%d.%d kHz", whole, part);
     } else {
-        sprintf(string, "%ld Hz", frequency);
+        sprintf(string, "%ld Hz", hertz);
     }
     return string;
+}
+
+
+void print_stream_attributes(struct DataStream* ds) {
+    fprintf(vpout, "DataStream (%s)", string_for_input_mode(ds->mode));
+    fprintf(vpout, "Data format: %s", string_for_data_format(ds->format));
+    fprintf(vpout, "Header length: %d bytes", ds->frame_header_length);
+    if (ds->all_threads_selected) {
+        fprintf(vpout, "Threads selected: ALL");
+    } else {
+        fprintf(vpout, "Threads selected: %d", ds->num_selected_threads);
+    }
+    fprintf(vpout, "Gap policy: %s", string_for_gap_policy(ds->gap_policy));
+
+}
+
+
+void print_thread_attributes(struct DataThread* dt) {
+    // TODO
+}
+
+
+void print_frame_attributes(struct DataFrame* df) {
+    // TODO
 }

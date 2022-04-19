@@ -28,16 +28,16 @@
 #define MAX_FRAME_LENGTH 134217728 // bytes
 #define ASCII_0 0x30
 
-void parse_vdif_header(struct InputStream* in);
-void update_vdif_header_attributes(struct InputStream* in);
-void parse_vdif_extended_data(struct InputStream* in);
-void parse_vdif_extended_data_nict(struct InputStream* in);
-void parse_vdif_extended_data_alma(struct InputStream* in);
-void parse_vdif_extended_data_nrao(struct InputStream* in);
-void parse_vdif_extended_data_corner_turned(struct InputStream* in);
-void parse_vdif_extended_data_haystack(struct InputStream* in);
+struct DataFrame* parse_header(struct DataStream* ds, unsigned int* data);
 
-void parse_codif_header(struct InputStream* in);
-void update_codif_header_attributes(struct InputStream* in);
+struct DataFrame* parse_vdif_header(struct DataStream* ds, unsigned int *data);
+void parse_vdif_extended_data(struct DataFrame* df);
+void parse_vdif_extended_data_nict(struct DataFrame* df);
+void parse_vdif_extended_data_alma(struct DataFrame* df);
+void parse_vdif_extended_data_nrao(struct DataFrame* df);
+void parse_vdif_extended_data_corner_turned(struct DataFrame* df);
+void parse_vdif_extended_data_haystack(struct DataFrame* df);
+
+struct DataFrame* parse_codif_header(struct DataStream* ds, unsigned int *data);
 
 #endif // VDIFPARSE_HEADERS_H

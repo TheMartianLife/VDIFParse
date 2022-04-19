@@ -23,13 +23,18 @@
 
 #include "vdifparse_types.h"
 
-#define _1e9 1000000000
-#define _1e6 1000000
-#define _1e3 1000
+#define vpout stdout // TODO: remove
+#define vperr stderr // TODO: remove
 
-char* string_for_input_format(enum InputFormat format);
+void print_stream_attributes(struct DataStream* ds);
+void print_thread_attributes(struct DataThread* dt);
+void print_frame_attributes(struct DataFrame* df);
+
+char* string_for_input_mode(enum InputMode mode);
+char* string_for_data_format(enum DataFormat format);
 char* string_for_data_type(enum DataType type);
+char* string_for_gap_policy(enum GapPolicy policy);
 char* string_for_edv(enum ExtendedDataVersion version);
-char* string_for_frequency(unsigned long int frequency);
+char* string_for_frequency(unsigned long frequency);
 
 #endif // VDIFPARSE_UTILS_H

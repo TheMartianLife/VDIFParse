@@ -17,96 +17,104 @@
 
 #include "vdifparse_api.h"
 
-struct DataStream* open_file(char* file_path, enum InputFormat format) {
-    struct DataStream* in = _init_stream(FileMode, format);
-    open_file_input(in, file_path);
-    if (in->_input_file_handle == NULL) { // check it actually opened
+struct DataStream* open_file(char* file_path, enum DataFormat format) {
+    struct DataStream* ds = _init_stream();
+    ds->mode = FileMode;
+    ds->format = format;
+    open_file_input(ds, file_path);
+    if (ds->_input_file_handle == NULL) { // check it actually opened
         fprintf(vp_stderr, "File %s could not be opened.", file_path);
         exit(1); // TODO: make this recoverable maybe?
     }
-    // TODO: init threat atributes
-    return in;
+    return ds;
 }
 
 
-struct DataStream* open_sink(struct DataStream* in, enum InputFormat format) {
-    return _init_stream(StreamMode, format);
+struct DataStream* open_sink(enum DataFormat format) {
+    struct DataStream* ds = _init_stream();
+    ds->mode = StreamMode;
+    ds->format = format;
+    return ds;
 }
 
 
-void set_thread_attributes(struct DataStream* in, unsigned short thread_num, float frequency, float bandwidth, char* channel_name) {
-    struct DataThread* thread = in->threads[thread_num];
+void set_thread_attributes(struct DataStream* ds, unsigned short thread_id, float frequency, float bandwidth, char* channel_name) {
+    struct DataThread* thread = ds->threads[thread_id];
     if (!thread) {
         thread =  _init_thread_attributes();
     }
     thread->frequency = frequency;
     thread->bandwidth = bandwidth;
     thread->channel_name = channel_name;
-    in->threads[thread_num] = thread;
+    ds->threads[thread_id] = thread;
 }
 
 
-void set_gap_policy(struct DataStream* in, enum GapPolicy policy) {
-    in->gap_policy = policy;
+void set_gap_policy(struct DataStream* ds, enum GapPolicy policy) {
+    ds->gap_policy = policy;
 }
 
 
-void set_cursor(struct DataStream* in, unsigned int epoch, unsigned long int second) {
-
-}
-
-
-void ingest_data(struct DataStream* in, unsigned int num_bytes, char** data) {
+void seek_to(struct DataStream* ds, unsigned int epoch, unsigned long second) {
 
 }
 
 
-void select_thread(struct DataStream* in, unsigned short thread_num) {
-
-}
-
-void select_all_threads(struct DataStream* in) {
+void ingest_data(struct DataStream* ds, unsigned int num_bytes, char** data) {
 
 }
 
 
-struct ThreadAttributes* get_thread_attributes(struct DataStream* in, unsigned short thread_num) {
-    return in->threads[thread_num]
+void select_thread(struct DataStream* ds, unsigned short thread_id) {
+    
 }
 
-
-enum GapPolicy get_gap_policy(struct DataStream* in) {
-    return in->gap_policy;
-}
-
-unsigned long int* get_cursor(struct DataStream* in) {
+void select_all_threads(struct DataStream* ds) {
 
 }
 
 
-unsigned short* get_selected_threads(struct DataStream* in) {
+struct DataThread* get_thread_attributes(struct DataStream* ds, unsigned short thread_id) {
+    return ds->threads[thread_id];
+}
+
+
+enum GapPolicy get_gap_policy(struct DataStream* ds) {
+    return ds->gap_policy;
+}
+
+unsigned long* get_cursor(struct DataStream* ds) {
 
 }
 
 
-void read_frames(struct DataStream* in, unsigned int num_frames, char** out) {
+unsigned short* get_selected_threads(struct DataStream* ds) {
+
+}
+
+unsigned char is_selected_thread(struct DataStream* ds, unsigned short thread_id) {
 
 }
 
 
-struct DataStream** separate_threads(struct DataStream* in) {
+void read_frames(struct DataStream* ds, unsigned int num_frames, char** out) {
 
 }
 
 
-void decode_samples(struct DataStream* in, unsigned long int num_samples, float** out, unsigned long int** valid_samples) {
+struct DataStream** separate_threads(struct DataStream* ds) {
 
 }
 
 
-void close(struct DataStream* in) {
-    if (in->_input_file_handle != NULL) {
-        fclose(in->_input_file_handle);
+void decode_samples(struct DataStream* ds, unsigned long num_samples, float** out, unsigned long** valid_samples) {
+
+}
+
+
+void close(struct DataStream* ds) {
+    if (ds->_input_file_handle != NULL) {
+        fclose(ds->_input_file_handle);
     }
 
     // TODO: free memory

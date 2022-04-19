@@ -20,11 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define vp_stdout stdout // TODO: remove
-#define vp_stderr stderr // TODO: remove
-
 enum InputMode { FileMode, StreamMode };
-enum InputFormat { VDIF, VDIF_LEGACY, CODIF };
+enum DataFormat { VDIF, VDIF_LEGACY, CODIF };
 enum DataType { RealData, ComplexData };
 enum GapPolicy  { SkipInvalid, InsertInvalid };
 
@@ -45,43 +42,54 @@ enum ExtendedDataVersion {
 struct DataStream {
     // fields that remain the same between frames and data threads
     enum InputMode mode; // StreamMode (inits empty) or FileMode (opens file)
-    enum InputFormat format; // file format (VDIF, CODIF, VDIF_LEGACY)
+    enum DataFormat format; // file format (VDIF, CODIF, VDIF_LEGACY)
     unsigned char frame_header_length; // size of frame header in bytes
 
+    unsigned char all_threads_selected;
+    unsigned short num_selected_threads;
+    unsigned short* selected_threads;
     struct DataThread** threads; // information about each thread
     enum GapPolicy gap_policy; // how invalid samples should be treated
+
+    struct DataFrame* frame_buffer;
 
     FILE* _input_file_handle;
 };
 
 struct DataThread {
-    unsigned long int frame_length; // size of frame in bytes, incl. header
-    unsigned long int num_channels;
+    unsigned long frame_length; // size of frame in bytes, incl. header
+    unsigned long num_channels;
     unsigned int bits_per_sample;
     char* station_id; // 16-bit uint or 2-char ASCII code of source device(s)
 
+    struct DataChannel** channels;
+};
 
+struct DataChannel {
+    unsigned char* name;
     float frequency;
     float bandwidth;
-    unsigned char* channel_name;
-
 };
 
 struct DataFrame {
+    unsigned short thread_id;
     unsigned char format_version; // version of VDIF/CODIF used
-    unsigned char valid_flag; // 0 if source device(s) detected malformation
-    unsigned long int seconds_from_epoch;
+    unsigned char invalid_flag; // whether source device(s) detected malformation
+    unsigned long seconds_from_epoch;
     unsigned int reference_epoch;
-    unsigned long int frame_number;
+    unsigned long frame_number;
     enum DataType data_type; // whether data represents real or complex numbers
     unsigned int extended_data_version;
     // TODO: CODIF/EDV fields
-    unsigned long int sample_rate;
+    unsigned long sample_rate;
     unsigned char* station_name;
+
+    unsigned char* data_buffer;
 };
 
 struct DataStream* _init_stream();
 struct DataThread* _init_thread();
-void print_attributes(struct DataStream* in, unsigned short int thread_num);
+struct DataChannel* _init_channel();
+struct DataFrame* _init_frame();
 
 #endif // VDIFPARSE_TYPES_H

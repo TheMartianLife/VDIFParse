@@ -17,29 +17,31 @@
 
 #include "vdifparse_types.h"
 
-#define MAX_THREADS 1024
 
-
-struct DataStream* _init_stream(enum InputMode mode, enum InputFormat format, unsigned int buffer_size) {
-    struct DataStream* in;
-    in = (struct DataStream *)calloc(1, sizeof(struct DataStream));
-    in->mode = mode;
-    // init thread atributes structures
-    in->threads = (struct DataThread **)calloc(MAX_THREADS, sizeof(struct DataThread*));
-    if (mode == FileMode) {
-        // open file, inspect attributes
-    }
-    return in;
+struct DataStream* _init_stream() {
+    struct DataStream* ds;
+    ds = (struct DataStream*)calloc(1, sizeof(struct DataStream));
+    ds->frame_buffer = (struct DataFrame*)calloc(20, sizeof(struct DataFrame));
+    return ds;
 }
 
 
 struct DataThread* _init_thread() {
-    struct DataThread* thread;
-    thread = (struct DataThread *)calloc(1, sizeof(struct DataThread)); 
-    return thread;
+    struct DataThread* dt;
+    dt = (struct DataThread*)calloc(1, sizeof(struct DataThread));
+    return dt;
 }
 
 
-void print_attributes(struct DataStream* in, unsigned short int thread_num) {
-    // TODO
+struct DataChannel* _init_channel() {
+    struct DataChannel* dc;
+    dc = (struct DataChannel*)calloc(1, sizeof(struct DataChannel));
+    return dc;  
+}
+
+
+struct DataFrame* _init_frame() {
+    struct DataThread* df;
+    df = (struct DataFrame*)calloc(1, sizeof(struct DataFrame));
+    return df;
 }

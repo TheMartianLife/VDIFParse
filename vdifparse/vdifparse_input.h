@@ -27,7 +27,7 @@
 #define DEFAULT_HEADER_SIZE 32
 
 
-void open_file_input(struct DataStream* in, char* file_path);
-void buffer_frames(struct DataStream* in);
+void open_file_input(struct DataStream* ds, char* file_path);
+void buffer_frames(struct DataStream* ds);
 
 #endif // VDIFPARSE_INPUT_H

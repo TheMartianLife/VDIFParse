@@ -23,26 +23,29 @@
 #include "vdifparse_utils.h"
 
 // initialise stream object
-struct DataStream* open_file(char* file_path, enum InputFormat format);
-struct DataStream* open_stream(enum InputFormat format);
+struct DataStream* open_file(char* file_path, enum DataFormat format);
+struct DataStream* open_sink(enum DataFormat format);
 
 // configure stream
-void set_thread_attributes(struct DataStream* in, unsigned short thread_num, float frequency, float bandwidth, char* channel_name);
-void set_gap_policy(struct DataStream* in, enum GapPolicy policy);
-void set_cursor(struct DataStream* in, unsigned int epoch, unsigned long int second);
+void set_thread_attributes(struct DataStream* ds, unsigned short thread_id, float frequency, float bandwidth, char* channel_name);
+void set_channel_attributes(struct DataStream* ds, unsigned short thread_id, unsigned long channel_num, unsigned float frequency, float bandwidth, char* channel_name);
+void set_gap_policy(struct DataStream* ds, enum GapPolicy policy);
+void seek_to(struct DataStream* ds, unsigned int epoch, unsigned long second);
 
 // populate stream
-void ingest_data(struct DataStream* in, unsigned int num_bytes, char** data);
+void ingest_data(struct DataStream* ds, unsigned int num_bytes, char** data);
 
 // configure output
-void select_thread(struct DataStream* in, unsigned short thread_num);
-void select_all_threads(struct DataStream* in);
+void select_thread(struct DataStream* ds, unsigned short thread_id);
+void select_all_threads(struct DataStream* ds);
+void deselect_all_threads(struct DataStream* ds);
 
 // check stream configuration
-struct ThreadAttributes* get_thread_attributes(struct DataStream* in, unsigned short thread_num);
-enum GapPolicy get_gap_policy(struct DataStream* in);
-unsigned long int get_cursor(struct DataStream* in);
-unsigned short* get_selected_threads(struct DataStream* in);
+struct DataThread* get_thread_attributes(struct DataStream* ds, unsigned short thread_id);
+enum GapPolicy get_gap_policy(struct DataStream* ds);
+unsigned long* get_cursor(struct DataStream* ds);
+unsigned short* get_selected_threads(struct DataStream* ds);
+unsigned char is_selected_thread(struct DataStream* ds, unsigned short thread_id);
 
 // validity checks
 
@@ -51,14 +54,14 @@ unsigned short* get_selected_threads(struct DataStream* in);
 
 
 // move data around
-void read_frames(struct DataStream* in, unsigned int num_frames, char** out);
-struct DataStream** separate_threads(struct DataStream* in);
+void read_frames(struct DataStream* ds, unsigned int num_frames, char** out);
+struct DataStream** separate_threads(struct DataStream* ds);
 
 // process data
-void decode_samples(struct DataStream* in, unsigned long int num_samples, float** out, unsigned long int** valid_samples);
+void decode_samples(struct DataStream* ds, unsigned long num_samples, float** out, unsigned long** valid_samples);
 
 
 // cleanup
-void close(struct DataStream* in);
+void close(struct DataStream* ds);
 
 #endif // VDIFPARSE_API_H
