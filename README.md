@@ -23,16 +23,14 @@ These loosely correlate with the two ways a user is likely to interact with VDIF
 ```c
 // OPTION A: StreamMode (open a data sink to buffer data into)
 struct DataStream ds = open_sink();
-// TODO: stream data in
-
-// (do your work)
+// (configure the data stream here)
+ingest_data(&ds, num_bytes, &port_data);
+// (use the data stream here)
 close(&ds);
 
 // OPTION B: FileMode (open a file to read from)
 struct DataStream ds = open_file("gre53_ef_scan035_fd1024-16-2-16.vdif");
-// ds has now parsed first header for basic stream attributes
-
-// (do your work)
+// (configure and use the data stream here)
 close(&ds);
 ```
 
@@ -46,6 +44,8 @@ set_thread_attributes(&ds, 0, 1414.0, 16, "Ch01");
 // 16 = bandwidth (MHz)
 // "Ch01" = name of the signal
 
+// TODO: set attributes of multi-channel thread
+
 // configure whether to skip or include data gaps
 set_gap_policy(&ds, InsertInvalid);
 
@@ -58,21 +58,10 @@ set_gap_policy(&ds, InsertInvalid);
 
 ```c
 // output raw data (such as to a new file)
-read_frames(ds, num_frames_to_read, output_buffer);
+read_frames(&ds, num_frames_to_read, &output_buffer);
 
 // decode and output data (such as for input to a software spectrometer)
-decode_samples(ds, num_samples_to_read, output_buffer, valid_samples);
-
-// maybe check how much bad data was found in the process
-for (int channel = 0; channel < num_channels; channel++) {
-    // because we set up the stream to included invalid samples, 
-    // it's easy to see how much invalid data was found
-    int bad_samples = num_samples_to_read - valid_samples[channel];
-    if (bad_samples > 0) {
-        fprintf(stderr, "Bad data in output channel %d :", channel);
-        fprintf(stderr, "%d samples\n", bad_samples);
-    }
-}
+decode_samples(&ds, num_samples_to_read, &output_buffer, &valid_samples);
 
 // TODO: fanning multi-thread input into multiple single-thread outputs?
 ```
@@ -80,22 +69,13 @@ for (int channel = 0; channel < num_channels; channel++) {
 **Data Inspection**
 
 ```c
-// inspect fields that remain static in a DataStream
-uint8 header_length = ds->header_length;
+enum DataFormat format = get_data_format(ds);
 
-// inspect fields that remain static in a DataThread
-uint32 num_channels = ds->thread[thread_id]->num_channels;
-
-// inspect fields that are specific to a channel within a DataThread
-float frequency = ds->thread[thread_id]->channels[channel_num].frequency;
-
-// inspect fields that are specific to a DataFrame within a DataStream
-// TODO
+// TODO fields that vary
 ```
 
 ## Limitations
 
-* File input must begin with a valid header, beginning at bit 0.
 * Limit to the number of channels per stream: 2<sup>16</sup> (65,536) instead of theoretical 2<sup>31</sup> (2,147,483,648)
 
 ## License

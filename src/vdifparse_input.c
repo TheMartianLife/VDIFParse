@@ -21,6 +21,7 @@
 #include "vdifparse_utils.h"
 
 static enum DataFormat peek_format(const uint8_t* bytes) {
+    // TODO scrub for synch fields first? or assume good?
     uint8_t legacy_mode = (bytes[0] >> 1) & 0b1;
     uint8_t version = bytes[4] & 0b111;
     if (version == 0 || version == 1) {
@@ -28,7 +29,7 @@ static enum DataFormat peek_format(const uint8_t* bytes) {
     } else if (version == 7) {
         return CODIF;
     }
-    return VDIF; // TODO handle correctly (error? scrub file for synch codes?)
+    return (enum DataFormat)NULL;
 }
 
 static struct DataFrame_VDIF peek_frame_vdif(struct DataStream ds) {
@@ -65,10 +66,9 @@ int peek_file(struct DataStream* ds, const char* file_path) {
 
     // see which format it is
     ds->format = peek_format(head);
-    // TODO check if that failed
-    // if (ds.format == NULL) {
-    //     return FILE_HEADER_INVALID;
-    // }
+    if (ds->format == NULL) {
+        return FILE_HEADER_INVALID;
+    }
 
     #ifdef __DEBUG__
         fprintf(stdout, "File format inferred to be: %s\n", string_for_data_format(ds->format));

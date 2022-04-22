@@ -37,7 +37,7 @@ char* get_error_message(int error_code);
 // MARK: Stream types and functions
 
 enum InputMode { FileMode, StreamMode };
-enum DataFormat { VDIF, VDIF_LEGACY, CODIF };
+enum DataFormat { VDIF=1, VDIF_LEGACY, CODIF };
 enum DataType { RealData, ComplexData };
 enum GapPolicy  { SkipInvalid, InsertInvalid };
 
