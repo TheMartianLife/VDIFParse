@@ -81,7 +81,8 @@ int peek_file(struct DataStream* ds, const char* file_path) {
 int buffer_frames(struct DataStream ds, unsigned int num_frames) {
     ds.buffered_frames = 0;
     uint32_t frame_length;
-
+    // a bit silly to duplicate code like this but it's still faster like this
+    // bc you only check once and don't have to cast struct ptrs to/from void*
     if (ds.format == CODIF) {
         while (ds.buffered_frames < num_frames && ! feof(get_file_handle(ds))) {
             struct DataFrame_CODIF frame = peek_frame_codif(ds);

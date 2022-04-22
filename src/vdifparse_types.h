@@ -30,6 +30,7 @@ enum StatusCode {
     FILE_HEADER_INVALID,
     UNRECOGNISED_VERSION,
     REACHED_END_OF_FILE,
+    BAD_FORMAT_DESIGNATOR,
 };
 
 char* get_error_message(int error_code);
@@ -50,6 +51,10 @@ unsigned int get_header_length(enum DataFormat format);
 struct DataStream {
     const enum InputMode mode;
     enum DataFormat format;
+
+    unsigned int data_rate;
+    unsigned int num_channels;
+    unsigned int bits_per_sample;
     unsigned int num_threads;
 
     enum GapPolicy gap_policy;
@@ -58,6 +63,9 @@ struct DataStream {
     void* input;
     void** frames;
 };
+
+int ingest_format_designator(struct DataStream* ds, char* format_designator);
+int ingest_structured_filename(struct DataStream* ds, char* file_path);
 
 // fields that may exist, and will return NULL if not
 FILE* get_file_handle(struct DataStream ds);

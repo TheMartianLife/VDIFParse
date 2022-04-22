@@ -15,7 +15,24 @@
 // You should have received a copy of the GNU General Public License along with
 // this program. If not, see <http://www.gnu.org/licenses/>.
 
+#include <string.h>
+#include <libgen.h>
+#include <ctype.h>
+
 #include "vdifparse_types.h"
+
+char* get_error_message(int error_code) {
+    switch(error_code) {
+        case SUCCESS: return "Success.";
+        case FAILED_TO_OPEN_FILE: return "Could not open file.";
+        case FILE_HEADER_INVALID: return "First bytes of file were not a valid header. File may be misaligned or malformed.";
+        case UNRECOGNISED_VERSION: return "Version field was unrecognised value. Cannot interpret data with unknown format.";
+        case REACHED_END_OF_FILE: return "Reached EOF before completing requested action. No more frames available.";
+        case BAD_FORMAT_DESIGNATOR: return "Format designator did not follow ([a-zA-Z]+[_-])?\\d+-\\d+-\\d+(-\\d+)? expected format.";
+        // TODO other types of errors...
+        default: return "INVALID STATUS CODE";
+    }
+}
 
 struct DataStream init_stream(enum InputMode mode) {
     struct DataStream ds = {mode};
@@ -53,16 +70,54 @@ void* init_frame(enum DataFormat format) {
     return df;
 }
 
-char* get_error_message(int error_code) {
-    switch(error_code) {
-        case SUCCESS: return "Success.";
-        case FAILED_TO_OPEN_FILE: return "Could not open file.";
-        case FILE_HEADER_INVALID: return "First bytes of file were not a valid header. File may be misaligned or malformed.";
-        case UNRECOGNISED_VERSION: return "Version field was unrecognised value. Cannot interpret data with unknown format.";
-        case REACHED_END_OF_FILE: return "Reached EOF before completing requested action. No more frames available.";
-        // TODO other types of errors...
-        default: return "INVALID STATUS CODE";
+int ingest_format_name(struct DataStream* ds, char* format_name) {
+    // TODO
+}
+
+int ingest_format_designator(struct DataStream* ds, char* format_designator) {
+    // first, let's see if this is a "simple" data stream
+    if (strchr(format_designator, '+') == NULL) {
+        int length = strlen(format_designator);
+        char* arg = calloc(length + 1, sizeof(char));
+        int char_num = 0;
+        char arg_num = 0;
+        for (int i = 0; i < length; i++) {
+            if (format_designator[i] == '-' || format_designator[i] == '_') {
+                arg[char_num] = '\n';
+                switch (arg_num) {
+                    case 0: 
+                        if (!isdigit(arg)) {
+                            int status = ingest_format_name(ds, arg);
+                            if (status != SUCCESS) {
+                                return BAD_FORMAT_DESIGNATOR;
+                            }
+                            arg_num++;
+                        }
+                    case 1: ds->data_rate = (unsigned int)atoi(arg);
+                        break;
+                    case 2: ds->num_channels = (unsigned int)atoi(arg);
+                        break;
+                    case 3: ds->bits_per_sample = (unsigned int)atoi(arg);
+                        break;
+                    case 4: ds->num_threads = (unsigned int)atoi(arg);
+                        break;
+                }
+                arg_num++;
+            } else {
+                arg[char_num] = format_designator[i];
+                char_num++;
+            }
+        }
+    } else {
+        // TODO: complex data streams
     }
+    return SUCCESS;
+}
+
+int ingest_structured_filename(struct DataStream* ds, char* file_path) {
+    char* filename = basename(file_path);
+    // TODO
+    return SUCCESS;
 }
 
 unsigned int get_header_length(enum DataFormat format) {
