@@ -24,17 +24,32 @@
 
 void raise_exception(const char *format, ...) {
     va_list args;
+    
     va_start(args, format);
-    fprintf(vperr, format, args);
+    fprintf(stderr, "\033[0;31mERROR: ");
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\033[0m\n");
     va_end(args);
+    
     exit(EXIT_FAILURE);
 }
 
 
-time_t time_for_epoch_seconds(unsigned int epoch, unsigned long seconds) {
-    unsigned int year = 2000 + (epoch / 2);
-    unsigned int month = 1 + ((epoch % 2) * 6);
-    char* iso_epoch = (char*)malloc(32 * sizeof(char));
+void raise_warning(const char *format, ...) {
+    va_list args;
+    
+    va_start(args, format);
+    fprintf(stderr, "\033[0;33mWARNING: ");
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\033[0m\n");
+    va_end(args);
+}
+
+
+time_t time_for_epoch_seconds(uint32_t epoch, uint32_t seconds) {
+    uint8_t year = 2000 + (epoch / 2);
+    uint8_t month = 1 + ((epoch % 2) * 6);
+    char* iso_epoch = (char*)calloc(32, sizeof(char));
     sprintf(iso_epoch, "%d-%d-01T00:00:00+0000", year, month);
     struct tm tm; // make a time object
     strptime(iso_epoch, "%Y-%m-%dT%H:%m::%S%z", &tm);
@@ -76,7 +91,7 @@ char* string_for_gap_policy(enum GapPolicy policy) {
 }
 
 
-char* string_for_edv(enum ExtendedDataVersion version) {
+char* string_for_edv(enum VDIFExtendedDataVersion version) {
     switch (version) {
         case None: return "None"; 
         case NICT: return "NICT"; 
@@ -88,51 +103,23 @@ char* string_for_edv(enum ExtendedDataVersion version) {
 }
 
 
-char* string_for_hertz(unsigned long hertz) {
-    char* string = (char*)malloc(128 * sizeof(char));
+char* string_for_hertz(uint32_t hertz) {
+    char* output = (char*)calloc(128, sizeof(char));
     int whole, part = 0;
     if (hertz > _1e9) {
         whole = hertz / _1e9;
         part = (hertz % _1e9) / _1e6;
-        sprintf(string, "%d.%d GHz", whole, part);
+        sprintf(output, "%d.%d GHz", whole, part);
     } else if (hertz > 1e6) {
         whole = hertz / _1e6;
         part = (hertz % _1e6) / _1e3;
-        sprintf(string, "%d.%d MHz", whole, part);
+        sprintf(output, "%d.%d MHz", whole, part);
     } else if (hertz > 1e3) {
         whole = hertz / _1e3;
         part = hertz % _1e3;
-        sprintf(string, "%d.%d kHz", whole, part);
+        sprintf(output, "%d.%d kHz", whole, part);
     } else {
-        sprintf(string, "%ld Hz", hertz);
+        sprintf(output, "%d Hz", hertz);
     }
-    return string;
-}
-
-
-void print_stream_attributes(struct DataStream* ds) {
-    fprintf(vpout, "DataStream (%s)\n", string_for_input_mode(ds->mode));
-    fprintf(vpout, "- Data format: %s\n", string_for_data_format(ds->format));
-    fprintf(vpout, "- Header length: %d bytes\n", ds->frame_header_length);
-    if (ds->_all_threads_selected) {
-        fprintf(vpout, "- Threads selected: ALL\n");
-    } else {
-        fprintf(vpout, "- Threads selected: %d\n", ds->_num_selected_threads);
-    }
-    fprintf(vpout, "- Gap policy: %s\n", string_for_gap_policy(ds->gap_policy));
-
-}
-
-
-void print_thread_attributes(struct DataThread* dt) {
-    fprintf(vpout, "DataThread %d\n", dt->thread_id);
-    fprintf(vpout, "- Frame length: %ld bytes\n", dt->frame_length);
-    fprintf(vpout, "- Channels: %ld\n", dt->num_channels);
-    fprintf(vpout, "- Bits per sample: %d bit(s)\n", dt->bits_per_sample);
-    fprintf(vpout, "- Station ID: %s\n", dt->station_id);
-}
-
-
-void print_frame_attributes(struct DataFrame* df) {
-    // TODO
+    return output;
 }

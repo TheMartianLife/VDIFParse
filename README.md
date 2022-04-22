@@ -21,34 +21,33 @@ These loosely correlate with the two ways a user is likely to interact with VDIF
 **Data Input**
 
 ```c
-// == Example usage in StreamMode
-struct DataStream* ds1 = open_stream(VDIF);
+// OPTION A: StreamMode (open a data sink to buffer data into)
+struct DataStream ds = open_sink();
 // TODO: stream data in
 
-// (do you work)
-close(ds1);
+// (do your work)
+close(&ds);
 
-// == Example usage in FileMode
-struct DataStream* ds2 = open_file("input_file.vdif", VDIF);
-// ds2 now contains first buffer of data, 
-// and has parsed first header for attributes
+// OPTION B: FileMode (open a file to read from)
+struct DataStream ds = open_file("gre53_ef_scan035_fd1024-16-2-16.vdif");
+// ds has now parsed first header for basic stream attributes
 
-// (do you work)
-close(ds2);
+// (do your work)
+close(&ds);
 ```
 
 **Configuration**
 
 ```c
 // TODO: set thread attributes
-set_thread_attributes(ds, 0, 1414.0, 16, "Ch01");
+set_thread_attributes(&ds, 0, 1414.0, 16, "Ch01");
 // 0 = thread number
 // 1414.0 = radio frequency (MHz)
 // 16 = bandwidth (MHz)
 // "Ch01" = name of the signal
 
 // configure whether to skip or include data gaps
-set_gap_policy(ds, InsertInvalid);
+set_gap_policy(&ds, InsertInvalid);
 
 // TODO: output thread selection
 
@@ -64,6 +63,17 @@ read_frames(ds, num_frames_to_read, output_buffer);
 // decode and output data (such as for input to a software spectrometer)
 decode_samples(ds, num_samples_to_read, output_buffer, valid_samples);
 
+// maybe check how much bad data was found in the process
+for (int channel = 0; channel < num_channels; channel++) {
+    // because we set up the stream to included invalid samples, 
+    // it's easy to see how much invalid data was found
+    int bad_samples = num_samples_to_read - valid_samples[channel];
+    if (bad_samples > 0) {
+        fprintf(stderr, "Bad data in output channel %d :", channel);
+        fprintf(stderr, "%d samples\n", bad_samples);
+    }
+}
+
 // TODO: fanning multi-thread input into multiple single-thread outputs?
 ```
 
@@ -71,10 +81,10 @@ decode_samples(ds, num_samples_to_read, output_buffer, valid_samples);
 
 ```c
 // inspect fields that remain static in a DataStream
-unsigned char header_length = ds->header_length;
+uint8 header_length = ds->header_length;
 
 // inspect fields that remain static in a DataThread
-unsigned long num_channels = ds->thread[thread_id]->num_channels;
+uint32 num_channels = ds->thread[thread_id]->num_channels;
 
 // inspect fields that are specific to a channel within a DataThread
 float frequency = ds->thread[thread_id]->channels[channel_num].frequency;
@@ -82,6 +92,11 @@ float frequency = ds->thread[thread_id]->channels[channel_num].frequency;
 // inspect fields that are specific to a DataFrame within a DataStream
 // TODO
 ```
+
+## Limitations
+
+* File input must begin with a valid header, beginning at bit 0.
+* Limit to the number of channels per stream: 2<sup>16</sup> (65,536) instead of theoretical 2<sup>31</sup> (2,147,483,648)
 
 ## License
 

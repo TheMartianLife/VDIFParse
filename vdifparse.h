@@ -17,6 +17,6 @@
 #ifndef VDIFPARSE_H
 #define VDIFPARSE_H
 
-#include "vdifparse/vdifparse_api.h"
+#include "src/vdifparse_api.h"
 
 #endif // VDIFPARSE_H

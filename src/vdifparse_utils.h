@@ -1,5 +1,5 @@
 // vdifparse_utils.h - provides general utility functions such as for printing
-// structs, converting between enum and string types, and more.
+// structs, converting between enum and char* types, and more.
 // Copyright (C) 2022 Mars Buttfield-Addison
 //
 // This program is free software: you can redistribute it and/or modify it under
@@ -24,20 +24,17 @@
 
 #include "vdifparse_types.h"
 
-#define vpout stdout // TODO: remove
-#define vperr stderr // TODO: remove
 
 void raise_exception(const char *format, ...);
+void raise_warning(const char *format, ...);
 
-void print_stream_attributes(struct DataStream* ds);
-void print_thread_attributes(struct DataThread* dt);
-void print_frame_attributes(struct DataFrame* df);
+time_t time_for_epoch_seconds(uint32_t epoch, uint32_t seconds);
 
 char* string_for_input_mode(enum InputMode mode);
 char* string_for_data_format(enum DataFormat format);
 char* string_for_data_type(enum DataType type);
 char* string_for_gap_policy(enum GapPolicy policy);
-char* string_for_edv(enum ExtendedDataVersion version);
-char* string_for_frequency(unsigned long frequency);
+char* string_for_edv(enum VDIFExtendedDataVersion version);
+char* string_for_hertz(uint32_t frequency);
 
 #endif // VDIFPARSE_UTILS_H

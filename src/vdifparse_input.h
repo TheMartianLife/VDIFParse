@@ -19,12 +19,13 @@
 
 #include <stdio.h>
 
-#include "vdifparse_headers.h"
 #include "vdifparse_types.h"
-#include "vdifparse_utils.h"
 
+static enum DataFormat peek_format(const uint8_t* bytes);
+static struct DataFrame_VDIF peek_frame_vdif(struct DataStream ds);
+static struct DataFrame_CODIF peek_frame_codif(struct DataStream ds);
+int peek_file(struct DataStream* ds, const char* file_path);
 
-void open_file_input(struct DataStream* ds, char* file_path);
-struct DataFrame* get_next_frame(struct DataStream* ds, unsigned char header_length);
+int buffer_frames(struct DataStream ds, unsigned int num_frames);
 
 #endif // VDIFPARSE_INPUT_H
