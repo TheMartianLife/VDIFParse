@@ -21,11 +21,8 @@
 
 #include "vdifparse_types.h"
 
-static enum DataFormat peek_format(const uint8_t* bytes);
-static struct DataFrame_VDIF peek_frame_vdif(struct DataStream ds);
-static struct DataFrame_CODIF peek_frame_codif(struct DataStream ds);
-int peek_file(struct DataStream* ds, const char* file_path);
+int peek_file(DataStream* ds, const char* file_path);
 
-int buffer_frames(struct DataStream ds, unsigned int num_frames);
+int buffer_frames(DataStream ds, unsigned int num_frames);
 
 #endif // VDIFPARSE_INPUT_H

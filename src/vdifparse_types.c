@@ -17,9 +17,12 @@
 
 #include <string.h>
 #include <libgen.h>
-#include <ctype.h>
 
 #include "vdifparse_types.h"
+#include "vdifparse_utils.h"
+
+#define TERM_CHAR '\0'
+
 
 char* get_error_message(int error_code) {
     switch(error_code) {
@@ -34,16 +37,16 @@ char* get_error_message(int error_code) {
     }
 }
 
-struct DataStream init_stream(enum InputMode mode) {
-    struct DataStream ds = {mode};
+DataStream init_stream(enum InputMode mode) {
+    DataStream ds = {mode};
     return ds;
 }
 
 void* init_input(enum InputMode mode) {
     void* di;
     switch (mode) { 
-        case FileMode: di = calloc(1, sizeof(struct DataStreamInput_File));
-        case StreamMode: di = calloc(1, sizeof(struct DataStreamInput_Stream));
+        case FileMode: di = calloc(1, sizeof(DataStreamInput_File));
+        case StreamMode: di = calloc(1, sizeof(DataStreamInput_Stream));
     }
     return di;
 }
@@ -53,70 +56,69 @@ void* init_frame(enum DataFormat format) {
     void* header;
     void* data;
     if (format == VDIF || format == VDIF_LEGACY) {
-        df = (struct DataFrame_VDIF*)calloc(1, sizeof(struct DataFrame_VDIF));
-        header = (struct VDIFHeader*)malloc(sizeof(struct VDIFHeader));
+        df = (DataFrame_VDIF*)calloc(1, sizeof(DataFrame_VDIF));
+        header = (VDIFHeader*)malloc(sizeof(VDIFHeader));
         if (format == VDIF) {
-            data = calloc(1, VDIF_EXTENDED_DATA_BYTES);
+            data = malloc(VDIF_EXTENDED_DATA_BYTES);
         }
-        ((struct DataFrame_VDIF*)df)->header = header;
-        ((struct DataFrame_VDIF*)df)->extended_data = data;
+        ((DataFrame_VDIF*)df)->header = header;
+        ((DataFrame_VDIF*)df)->extended_data = data;
     } else if (format == CODIF) {
-        df = (struct DataFrame_CODIF*)calloc(1, sizeof(struct DataFrame_CODIF));
-        header = (struct CODIFHeader*)malloc(sizeof(struct CODIFHeader));
-        data = calloc(1, CODIF_METADATA_BYTES);
-        ((struct DataFrame_VDIF*)df)->header = header;
-        ((struct DataFrame_VDIF*)df)->extended_data = data;
+        df = (DataFrame_CODIF*)calloc(1, sizeof(DataFrame_CODIF));
+        header = (CODIFHeader*)malloc(sizeof(CODIFHeader));
+        data = malloc(CODIF_METADATA_BYTES);
+        ((DataFrame_VDIF*)df)->header = header;
+        ((DataFrame_VDIF*)df)->extended_data = data;
     }
     return df;
 }
 
-int ingest_format_name(struct DataStream* ds, char* format_name) {
-    // TODO
-}
-
-int ingest_format_designator(struct DataStream* ds, char* format_designator) {
+int ingest_format_designator(DataStream* ds, const char* format_designator) {
     // first, let's see if this is a "simple" data stream
-    if (strchr(format_designator, '+') == NULL) {
-        int length = strlen(format_designator);
-        char* arg = calloc(length + 1, sizeof(char));
-        int char_num = 0;
-        char arg_num = 0;
-        for (int i = 0; i < length; i++) {
-            if (format_designator[i] == '-' || format_designator[i] == '_') {
-                arg[char_num] = '\n';
-                switch (arg_num) {
-                    case 0: 
-                        if (!isdigit(arg)) {
-                            int status = ingest_format_name(ds, arg);
-                            if (status != SUCCESS) {
-                                return BAD_FORMAT_DESIGNATOR;
-                            }
-                            arg_num++;
-                        }
-                    case 1: ds->data_rate = (unsigned int)atoi(arg);
-                        break;
-                    case 2: ds->num_channels = (unsigned int)atoi(arg);
-                        break;
-                    case 3: ds->bits_per_sample = (unsigned int)atoi(arg);
-                        break;
-                    case 4: ds->num_threads = (unsigned int)atoi(arg);
-                        break;
+    // TODO: support complex data streams?
+    char* designator = strdup(format_designator);
+    if (strchr(designator, '+') == NULL) {
+        char* arg = strtok(designator, "_-"); // strsep(format_designator, "_-");
+        int arg_num = 0;
+        int arg_value = 0;
+        char* non_digits;
+        while (arg != NULL) {
+            arg_value = strtoul(arg, &non_digits, 10);
+            // check if arg is numeric based on success of cast to ul
+            if (arg[0] != TERM_CHAR && *non_digits != TERM_CHAR) {
+                // assume this is the format name
+                // TODO interpret this for data type/format?
+                if (arg_num != 0) {
+                    return BAD_FORMAT_DESIGNATOR; // only first arg may be non-numeric
                 }
-                arg_num++;
             } else {
-                arg[char_num] = format_designator[i];
-                char_num++;
+                switch (arg_num) {
+                    case 0: arg_num++; 
+                    case 1: set_data_rate(ds, (unsigned int)arg_value);
+                        break;
+                    case 2: set_num_channels(ds, (unsigned int)arg_value);
+                        break;
+                    case 3: set_bits_per_sample(ds, (unsigned int)arg_value);
+                        break;
+                    case 4: set_num_threads(ds, (unsigned int)arg_value);
+                        break;
+                    default: return BAD_FORMAT_DESIGNATOR; // too many args
+                }
             }
+            arg = strtok(NULL, "_-");
+            arg_num++;
         }
-    } else {
-        // TODO: complex data streams
+        if (arg_num < 5) {
+            // num threads arg was omitted, so use default value
+            set_num_threads(ds, (unsigned int)1);
+        }
     }
     return SUCCESS;
 }
 
-int ingest_structured_filename(struct DataStream* ds, char* file_path) {
+int ingest_structured_filename(DataStream* ds, char* file_path) {
     char* filename = basename(file_path);
-    // TODO
+    // TODO this
     return SUCCESS;
 }
 
@@ -128,14 +130,14 @@ unsigned int get_header_length(enum DataFormat format) {
     }
 }
 
-FILE* get_file_handle(struct DataStream ds) {
+FILE* get_file_handle(DataStream ds) {
     if (ds.mode == FileMode && ds.input != NULL) {
-        return ((struct DataStreamInput_File*)ds.input)->file_handle;
+        return ((DataStreamInput_File*)ds.input)->file_handle;
     }
     return (FILE*)NULL;
 }
 
-unsigned int should_buffer_frame(struct DataStream ds, const void* frame) {
+unsigned int should_buffer_frame(DataStream ds, const void* frame) {
     // TODO check if selected thread, if frame is invalid and gap policy is SkipInvalid, etc.
     return 1;
 }

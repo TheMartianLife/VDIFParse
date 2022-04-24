@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License along with
 // this program. If not, see <http://www.gnu.org/licenses/>.
 
+#include <string.h>
+#include <ctype.h>
+
 #include "vdifparse_utils.h"
 
 #define _1e9 1000000000
@@ -49,7 +52,7 @@ void raise_warning(const char *format, ...) {
 time_t time_for_epoch_seconds(uint32_t epoch, uint32_t seconds) {
     uint8_t year = 2000 + (epoch / 2);
     uint8_t month = 1 + ((epoch % 2) * 6);
-    char* iso_epoch = (char*)calloc(32, sizeof(char));
+    char* iso_epoch = (char*)malloc(32 * sizeof(char));
     sprintf(iso_epoch, "%d-%d-01T00:00:00+0000", year, month);
     struct tm tm; // make a time object
     strptime(iso_epoch, "%Y-%m-%dT%H:%m::%S%z", &tm);
@@ -104,7 +107,7 @@ char* string_for_edv(enum VDIFExtendedDataVersion version) {
 
 
 char* string_for_hertz(uint32_t hertz) {
-    char* output = (char*)calloc(128, sizeof(char));
+    char* output = (char*)malloc(128 * sizeof(char));
     int whole, part = 0;
     if (hertz > _1e9) {
         whole = hertz / _1e9;
@@ -122,4 +125,31 @@ char* string_for_hertz(uint32_t hertz) {
         sprintf(output, "%d Hz", hertz);
     }
     return output;
+}
+
+void print_vdif_frame(DataFrame_VDIF frame) {
+    if (frame.header != NULL) {
+        VDIFHeader* header = frame.header;
+        fprintf(stdout, "Invalid flag: %hu\n", header->invalid_flag);
+        fprintf(stdout, "Legacy mode: %hu\n", header->legacy_mode);
+        fprintf(stdout, "Seconds from epoch: %lu\n", (unsigned long)header->seconds_from_epoch);
+        fprintf(stdout, "Unassigned field: %hu\n", header->unassigned_field);
+        fprintf(stdout, "Reference epoch: %hu\n", header->reference_epoch);
+        fprintf(stdout, "Data frame number: %lu\n", (unsigned long)header->data_frame_number);
+        fprintf(stdout, "VDIF version: %hu\n", header->vdif_version_number);
+        fprintf(stdout, "Number of channels (log2): %hu\n", header->log2_num_channels);        
+        fprintf(stdout, "Frame length (/8): %lu\n", (unsigned long)header->frame_length);
+        fprintf(stdout, "Data type: %hu\n", header->data_type);
+        fprintf(stdout, "Bits per sample (-1): %hu\n", header->bits_per_sample);
+        fprintf(stdout, "Thread ID: %u\n", header->thread_id);
+        fprintf(stdout, "Station ID: %u\n", header->station_id);
+    }
+    // TODO extended data fields
+}
+
+void print_codif_frame(DataFrame_CODIF frame) {
+    if (frame.header != NULL) {
+
+    }
+    // TODO metadata fields
 }

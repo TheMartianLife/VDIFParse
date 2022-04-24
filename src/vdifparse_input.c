@@ -28,30 +28,39 @@ static enum DataFormat peek_format(const uint8_t* bytes) {
         return (legacy_mode) ? VDIF_LEGACY : VDIF;
     } else if (version == 7) {
         return CODIF;
+    } else {
+        raise_exception("file format could not be inferred.");
+        return VDIF; // to silence the compiler
     }
-    return (enum DataFormat)NULL;
 }
 
-static struct DataFrame_VDIF peek_frame_vdif(struct DataStream ds) {
-    struct DataFrame_VDIF* frame = (struct DataFrame_VDIF*)init_frame(ds.format);
-    fread((void*)frame->header, 1, sizeof(struct VDIFHeader), get_file_handle(ds));
+void print_bits(char c){
+    for( int i = 7; i >= 0; i-- ) {
+        printf( "%d", ( c >> i ) & 1 ? 1 : 0 );
+    }
+    printf(" ");
+}
+
+static DataFrame_VDIF peek_frame_vdif(DataStream ds) {
+    DataFrame_VDIF* frame = (DataFrame_VDIF*)init_frame(ds.format);
+    fread((uint8_t*)frame->header, sizeof(VDIFHeader), 1, get_file_handle(ds));
     // now extended data, if any
     if (ds.format == VDIF) {
-        fread((void*)frame->extended_data, 1, VDIF_EXTENDED_DATA_BYTES, get_file_handle(ds));
+        fread((uint8_t*)frame->extended_data, VDIF_EXTENDED_DATA_BYTES, 1, get_file_handle(ds));
     }
     return *frame;
 }
 
-static struct DataFrame_CODIF peek_frame_codif(struct DataStream ds) {
-    struct DataFrame_CODIF* frame = (struct DataFrame_CODIF*)init_frame(ds.format);
-    fread((void*)frame->header, 1, sizeof(struct CODIFHeader), get_file_handle(ds));
+static DataFrame_CODIF peek_frame_codif(DataStream ds) {
+    DataFrame_CODIF* frame = (DataFrame_CODIF*)init_frame(ds.format);
+    fread((uint8_t*)frame->header, sizeof(CODIFHeader), 1, get_file_handle(ds));
     // now metadata
-    fread((void*)frame->metadata, 1, CODIF_METADATA_BYTES, get_file_handle(ds));
+    fread((uint8_t*)frame->metadata, CODIF_METADATA_BYTES, 1, get_file_handle(ds));
     return *frame;
 }
 
-int peek_file(struct DataStream* ds, const char* file_path) {
-    struct DataStreamInput_File* di = (struct DataStreamInput_File*)init_input(FileMode);
+int peek_file(DataStream* ds, const char* file_path) {
+    DataStreamInput_File* di = (DataStreamInput_File*)init_input(FileMode);
     // open file in binary mode
     di->file_handle = fopen(file_path, "rb");
     if (di->file_handle == NULL) { // check it actually opened
@@ -59,16 +68,14 @@ int peek_file(struct DataStream* ds, const char* file_path) {
     }
 
     // get a bit of the file
-    uint8_t* head = (uint8_t*)calloc(5, sizeof(uint8_t));
+    uint8_t head[5];
     fread(head, 5, 1, di->file_handle);
     fseek(di->file_handle, 0, SEEK_SET);
     ds->input = di;
 
     // see which format it is
     ds->format = peek_format(head);
-    if (ds->format == NULL) {
-        return FILE_HEADER_INVALID;
-    }
+    // TODO nicer error handling of this
 
     #ifdef __DEBUG__
         fprintf(stdout, "File format inferred to be: %s\n", string_for_data_format(ds->format));
@@ -78,50 +85,39 @@ int peek_file(struct DataStream* ds, const char* file_path) {
 }
 
 
-int buffer_frames(struct DataStream ds, unsigned int num_frames) {
+int buffer_frames(DataStream ds, unsigned int num_frames) {
     ds.buffered_frames = 0;
     uint32_t frame_length;
     // a bit silly to duplicate code like this but it's still faster like this
-    // bc you only check once and don't have to cast struct ptrs to/from void*
+    // bc you only check once and don't have to cast ptrs to/from void*
     if (ds.format == CODIF) {
         while (ds.buffered_frames < num_frames && ! feof(get_file_handle(ds))) {
-            struct DataFrame_CODIF frame = peek_frame_codif(ds);
+            DataFrame_CODIF frame = peek_frame_codif(ds);
             frame_length = frame.header->frame_length * 8;
             if (should_buffer_frame(ds, &frame)) {
                 frame.data = (uint32_t*)malloc(frame_length);
-                fread((void*)frame.data, 1, frame_length, get_file_handle(ds));
+                fread((uint8_t*)frame.data, frame_length, 1, get_file_handle(ds));
                 ds.frames[ds.buffered_frames] = &frame;
                 ds.buffered_frames++;
-                #ifdef __DEBUG__
-                    fprintf(stdout, "Buffered frame: %d bytes\n", frame_length);
-                #endif
             } else {
                 // skip over this frame in the file
                 fseek(get_file_handle(ds), frame_length, SEEK_CUR);
-                #ifdef __DEBUG__
-                    fprintf(stdout, "Skipped frame: %d bytes\n", frame_length);
-                #endif
+
             }
         }
     } else {
-        struct DataFrame_VDIF frame;
+        DataFrame_VDIF frame;
         while (ds.buffered_frames < num_frames && ! feof(get_file_handle(ds))) {
             frame = peek_frame_vdif(ds);
             frame_length = frame.header->frame_length * 8;
             if (should_buffer_frame(ds, &frame)) {
                 frame.data = (uint32_t*)malloc(frame_length);
-                fread(frame.data, 1, frame_length, get_file_handle(ds));
+                fread((uint8_t*)frame.data, frame_length, 1, get_file_handle(ds));
                 ds.frames[ds.buffered_frames] = &frame;
                 ds.buffered_frames++;
-                #ifdef __DEBUG__
-                    fprintf(stdout, "Buffered frame: %d bytes\n", frame_length);
-                #endif
             } else {
                 // skip over this frame in the file
                 fseek(get_file_handle(ds), frame_length, SEEK_CUR);
-                #ifdef __DEBUG__
-                    fprintf(stdout, "Skipped frame: %d bytes\n", frame_length);
-                #endif
             }
         }
     }

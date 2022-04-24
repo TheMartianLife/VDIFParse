@@ -23,26 +23,30 @@
 
 // MARK: initialise stream object
 
-struct DataStream open_file(char* file_path);
-struct DataStream open_sink();
+DataStream open_file(char* file_path);
+DataStream open_sink();
 
 // MARK: configure objects
 
-static inline enum InputMode get_mode(struct DataStream ds) { return ds.mode; }
-static inline enum DataFormat get_data_format(struct DataStream ds) { return ds.format; }
-static inline unsigned int get_num_threads(struct DataStream ds) { return ds.num_threads; }
-static inline enum GapPolicy get_gap_policy(struct DataStream ds) { return ds.gap_policy; }
-static inline void set_gap_policy(struct DataStream* ds, enum GapPolicy policy) { ds->gap_policy = policy; }
+int set_format_designator(DataStream* ds, const char* format_designator);
+void set_gap_policy(DataStream* ds, enum GapPolicy policy);
 
 // MARK: populate stream
 
-void ingest_data(struct DataStream ds, uint8_t num_bytes, const char** data);
+void ingest_data(DataStream ds, uint8_t num_bytes, const char** data);
 
 // MARK: configure output
 
-void select_thread(struct DataStream ds, uint16_t thread_id);
-void select_all_threads(struct DataStream ds);
-void deselect_all_threads(struct DataStream ds);
+void select_thread(DataStream ds, uint16_t thread_id);
+void select_all_threads(DataStream ds);
+void deselect_all_threads(DataStream ds);
+
+// MARK: check configuration
+
+static inline enum InputMode get_mode(DataStream ds) { return ds.mode; }
+static inline enum DataFormat get_data_format(DataStream ds) { return ds.format; }
+static inline unsigned int get_num_threads(DataStream ds) { return ds.num_threads; }
+static inline enum GapPolicy get_gap_policy(DataStream ds) { return ds.gap_policy; }
 
 // TODO maybe add functionality for validity checking?
 
@@ -50,20 +54,20 @@ void deselect_all_threads(struct DataStream ds);
 
 // TODO maybe add functionality that tells you size of malloc needed for decode?
 
-void seek_to(struct DataStream ds, uint8_t epoch, uint32_t second);
+void seek_to(DataStream ds, uint8_t epoch, uint32_t second);
 
 // MARK: move data around
 
-void read_frames(struct DataStream ds, uint8_t num_frames, char** out);
-struct DataStream** separate_threads(struct DataStream ds);
+void read_frames(DataStream ds, uint8_t num_frames, char** out);
+DataStream** separate_threads(DataStream ds);
 
 // MARK: process data
 
-void decode_samples(struct DataStream ds, uint32_t num_samples, float** out, uint32_t* valid_samples);
+void decode_samples(DataStream ds, uint32_t num_samples, float** out, uint32_t* valid_samples);
 
 
 // MARK: cleanup
 
-void close(struct DataStream ds);
+void close(DataStream ds);
 
 #endif // VDIFPARSE_API_H

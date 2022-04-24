@@ -19,19 +19,35 @@
 #include "vdifparse_input.h"
 #include "vdifparse_utils.h"
 
-struct DataStream open_file(char* file_path) {
-    struct DataStream ds = init_stream(FileMode);
+DataStream open_file(char* file_path) {
+    DataStream ds = init_stream(FileMode);
     int status = peek_file(&ds, file_path);
     if (status != SUCCESS) {
         raise_exception("file %s could not be opened.", file_path);
     }
+    status = ingest_structured_filename(&ds, file_path);
+    if (status != SUCCESS) {
+        raise_warning("filename was not structured to specifications.");
+    }
     // TODO remove
-    ds.frames = malloc(sizeof(struct DataFrame_VDIF*));
+    ds.frames = malloc(sizeof(DataFrame_VDIF*));
     buffer_frames(ds, 1);
     return ds;
 }
 
-struct DataStream open_sink() {
+DataStream open_sink() {
     // unfortunately nothing else can be known at this time
     return init_stream(StreamMode);
+}
+
+int set_format_designator(DataStream* ds, const char* format_designator) {
+    int status = ingest_format_designator(ds, format_designator);
+    if (status != SUCCESS) {
+        raise_warning("format designator %s could not be parsed.", format_designator);
+    }
+    return status;
+}
+
+void set_gap_policy(DataStream* ds, enum GapPolicy policy) { 
+    ds->gap_policy = policy; 
 }

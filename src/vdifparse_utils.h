@@ -37,4 +37,7 @@ char* string_for_gap_policy(enum GapPolicy policy);
 char* string_for_edv(enum VDIFExtendedDataVersion version);
 char* string_for_hertz(uint32_t frequency);
 
+void print_vdif_frame(DataFrame_VDIF frame);
+void print_codif_frame(DataFrame_CODIF frame);
+
 #endif // VDIFPARSE_UTILS_H
