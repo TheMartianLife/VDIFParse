@@ -31,43 +31,6 @@ DataStream open_sink();
 int set_format_designator(DataStream* ds, const char* format_designator);
 void set_gap_policy(DataStream* ds, enum GapPolicy policy);
 
-// MARK: populate stream
-
-void ingest_data(DataStream ds, uint8_t num_bytes, const char** data);
-
-// MARK: configure output
-
-void select_thread(DataStream ds, uint16_t thread_id);
-void select_all_threads(DataStream ds);
-void deselect_all_threads(DataStream ds);
-
-// MARK: check configuration
-
-static inline enum InputMode get_mode(DataStream ds) { return ds.mode; }
-static inline enum DataFormat get_data_format(DataStream ds) { return ds.format; }
-static inline unsigned int get_num_threads(DataStream ds) { return ds.num_threads; }
-static inline enum GapPolicy get_gap_policy(DataStream ds) { return ds.gap_policy; }
-
-// TODO maybe add functionality for validity checking?
-
-// MARK: prepare for output
-
-// TODO maybe add functionality that tells you size of malloc needed for decode?
-
-void seek_to(DataStream ds, uint8_t epoch, uint32_t second);
-
-// MARK: move data around
-
-void read_frames(DataStream ds, uint8_t num_frames, char** out);
-DataStream** separate_threads(DataStream ds);
-
-// MARK: process data
-
-void decode_samples(DataStream ds, uint32_t num_samples, float** out, uint32_t* valid_samples);
-
-
-// MARK: cleanup
-
 void close(DataStream ds);
 
 #endif // VDIFPARSE_API_H

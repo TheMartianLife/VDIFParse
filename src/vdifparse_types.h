@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define BUFFER_FRAMES 1
 #define CODIF_VERSION 0b111
 #define CODIF_METADATA_BYTES 20
 #define VDIF_EXTENDED_DATA_BYTES 16
@@ -46,7 +47,7 @@ typedef struct DataStreamInput_File {
 } DataStreamInput_File;
 
 typedef struct DataStreamInput_Stream {
-
+    unsigned int buffer_depth;
 } DataStreamInput_Stream;
 
 typedef struct {
@@ -56,7 +57,6 @@ typedef struct {
         DataStreamInput_Stream* stream;
     };
 } DataStreamInput;
-
 
 // MARK: VDIF format types
 
@@ -212,7 +212,7 @@ typedef struct {
 // MARK: Stream types
 
 typedef struct DataStream {
-    const enum InputMode mode;
+    DataStreamInput input;
     enum DataFormat format;
 
     unsigned int data_rate;
@@ -223,8 +223,7 @@ typedef struct DataStream {
     enum GapPolicy gap_policy;
 
     unsigned int buffered_frames;
-    DataStreamInput* input;
-    DataFrame** frames;
+    DataFrame frames[BUFFER_FRAMES];
 } DataStream;
 
 char* get_error_message(int error_code);

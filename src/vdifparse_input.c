@@ -16,6 +16,7 @@
 // this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
+#include <string.h>
 
 #include "vdifparse_input.h"
 #include "vdifparse_utils.h"
@@ -63,7 +64,7 @@ int peek_file(DataStream* ds, const char* file_path) {
     uint8_t head[5];
     fread(head, 5, 1, file_handle);
     fseek(file_handle, 0, SEEK_SET);
-    ds->input->file->file_handle = file_handle;
+    ds->input.file->file_handle = file_handle;
 
     // see which format it is
     ds->format = peek_format(head);
@@ -87,11 +88,12 @@ int buffer_frames(DataStream* ds, unsigned int num_frames) {
             if (ds->format == CODIF) {
                 frame.codif->data = malloc(frame_length);
                 fread(frame.codif->data, frame_length, 1, get_file_handle(*ds));
+                ds->frames[ds->buffered_frames].codif = frame.codif;
             } else {
                 frame.vdif->data = malloc(frame_length);
                 fread(frame.vdif->data, frame_length, 1, get_file_handle(*ds));
+                ds->frames[ds->buffered_frames].vdif = frame.vdif;
             }
-            ds->frames[ds->buffered_frames] = &frame;
             ds->buffered_frames++;
         } else {
             // skip over this frame in the file

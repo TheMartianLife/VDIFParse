@@ -22,8 +22,6 @@
 #include "vdifparse_utils.h"
 
 #define TERM_CHAR '\0'
-#define BUFFER_FRAMES 1
-
 
 char* get_error_message(int error_code) {
     switch(error_code) {
@@ -38,27 +36,40 @@ char* get_error_message(int error_code) {
     }
 }
 
+    // enum DataFormat format;
+
+    // unsigned int data_rate;
+    // unsigned int num_channels;
+    // unsigned int bits_per_sample;
+    // unsigned int num_threads;
+
+    // enum GapPolicy gap_policy;
+
+    // unsigned int buffered_frames;
+    // DataStreamInput input;
+    // DataFrame frames[BUFFER_FRAMES];
+
 DataStream init_stream(enum InputMode mode) {
-    DataStream ds = {mode};
     DataStreamInput input = init_input(mode);
-    ds.input = &input;
-    ds.frames = malloc(sizeof(DataFrame*));
+    DataStream ds = { .input = input };
     return ds;
 }
 
 DataStreamInput init_input(enum InputMode mode) {
-    DataStreamInput di = {mode};
+    DataStreamInput di = { .mode = mode };
     switch (mode) { 
-        case FileMode: di.file = malloc(sizeof(DataStreamInput_File));
-        case StreamMode: di.stream = malloc(sizeof(DataStreamInput_Stream));
+        case FileMode: di.file = calloc(1, sizeof(DataStreamInput_File));
+            break;
+        case StreamMode: di.stream = calloc(1, sizeof(DataStreamInput_Stream));
+            break;
     }
     return di;
 }
 
 DataFrame init_frame(enum DataFormat format) {
-    DataFrame df = {format};
+    DataFrame df = { .format = format };
     if (format == VDIF || format == VDIF_LEGACY) {
-        df.vdif = malloc(sizeof(DataFrame_VDIF));
+        df.vdif = calloc(1, sizeof(DataFrame_VDIF));
         VDIFHeader* header = calloc(1, sizeof(VDIFHeader));
         df.vdif->header = header;
         if (format == VDIF) {
@@ -66,7 +77,7 @@ DataFrame init_frame(enum DataFormat format) {
             df.vdif->extended_data = data;
         }
     } else if (format == CODIF) {
-        df.codif = malloc(sizeof(DataFrame_CODIF));
+        df.codif = calloc(1, sizeof(DataFrame_CODIF));
         CODIFHeader* header = calloc(1, sizeof(CODIFHeader));
         df.codif->header = header;
         CODIFMetadata* data = calloc(1, CODIF_METADATA_BYTES);
@@ -141,8 +152,8 @@ unsigned int get_frame_length(DataFrame df) {
 }
 
 FILE* get_file_handle(DataStream ds) {
-    if (ds.input != NULL && ds.input->mode == FileMode) {
-        return ds.input->file->file_handle;
+    if (ds.input.mode == FileMode) {
+        return ds.input.file->file_handle;
     }
     raise_exception("data stream file handle was NULL or input type was not FileMode.");
     return (FILE*)NULL;
