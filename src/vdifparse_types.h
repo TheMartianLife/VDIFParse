@@ -20,27 +20,37 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define BUFFER_FRAMES 1
+// one arg that may be externally user-defined
+#ifndef BUFFER_FRAMES
+#define BUFFER_FRAMES 20
+#endif
+
+#define datetime struct tm
+
+#define TERM_CHAR '\0'
+
 #define CODIF_VERSION 0b111
 #define CODIF_METADATA_BYTES 20
 #define VDIF_EXTENDED_DATA_BYTES 16
 
 enum StatusCode {
-    SUCCESS = 0,
+    SUCCESS = 1,
+    FAILURE = 0,
     UNKNOWN_FORMAT = -1,
     FAILED_TO_OPEN_FILE = -2,
     FILE_HEADER_INVALID = -3,
     UNRECOGNISED_VERSION = -4,
     REACHED_END_OF_FILE = -5,
     BAD_FORMAT_DESIGNATOR = -6,
-}; // NOTE: keep codes < 0 so that result >= 0 indicates success
+}; // NOTE: keep codes < 0 so that result > 0 indicates success
 
 enum InputMode { FileMode, StreamMode };
 enum DataFormat { VDIF=1, VDIF_LEGACY, CODIF };
 enum DataType { RealData, ComplexData };
 enum GapPolicy  { SkipInvalid, InsertInvalid };
 
-// MARK: Data stream input types
+
+// MARK: Stream input types
 
 typedef struct DataStreamInput_File {
     FILE* file_handle;
@@ -57,6 +67,9 @@ typedef struct {
         DataStreamInput_Stream* stream;
     };
 } DataStreamInput;
+
+DataStreamInput init_input(enum InputMode mode);
+FILE* get_file_handle(DataStreamInput di);
 
 // MARK: VDIF format types
 
@@ -163,6 +176,7 @@ typedef struct DataFrame_VDIF {
     uint32_t* data;
 } DataFrame_VDIF;
 
+
 // MARK: CODIF format types
 
 // may need different cases for different CODIF versions in the future
@@ -201,18 +215,26 @@ typedef struct DataFrame_CODIF {
     uint32_t* data;
 } DataFrame_CODIF;
 
+
+// MARK: Generic frame type
+
 typedef struct {
-    const enum DataFormat format;
+    enum DataFormat format;
     union {
         DataFrame_VDIF* vdif;
         DataFrame_CODIF* codif;
     };
 } DataFrame;
 
+DataFrame init_frame(enum DataFormat format);
+unsigned int get_header_length(DataFrame df);
+unsigned int get_frame_length(DataFrame df);
+
+
 // MARK: Stream types
 
 typedef struct DataStream {
-    DataStreamInput input;
+    const DataStreamInput input;
     enum DataFormat format;
 
     unsigned int data_rate;
@@ -226,26 +248,20 @@ typedef struct DataStream {
     DataFrame frames[BUFFER_FRAMES];
 } DataStream;
 
-char* get_error_message(int error_code);
-
 DataStream init_stream(enum InputMode mode);
-DataStreamInput init_input(enum InputMode mode);
-DataFrame init_frame(enum DataFormat format);
-
-unsigned int get_header_length(enum DataFormat format);
-unsigned int get_frame_length(DataFrame df);
-
 int ingest_format_designator(DataStream* ds, const char* format_designator);
-int ingest_structured_filename(DataStream* ds, char* file_path);
+int ingest_structured_filename(DataStream* ds, const char* file_path);
 
-FILE* get_file_handle(DataStream ds);
+static inline enum DataFormat get_data_format(DataStream ds) { return ds.format; }
+static inline enum GapPolicy get_gap_policy(DataStream ds) { return ds.gap_policy; }
 
 static inline void set_data_format(DataStream* ds, enum DataFormat format) { ds->format = format; }
 static inline void set_data_rate(DataStream* ds, unsigned int data_rate ) { ds->data_rate = data_rate; }
 static inline void set_num_channels(DataStream* ds, unsigned int num_channels ) { ds->num_channels = num_channels; }
 static inline void set_bits_per_sample(DataStream* ds, unsigned int bits_per_sample ) { ds->bits_per_sample = bits_per_sample; }
 static inline void set_num_threads(DataStream* ds, unsigned int num_threads ) { ds->num_threads = num_threads; }
+static inline void set_gap_policy(DataStream* ds, enum GapPolicy policy) { ds->gap_policy = policy; }
 
-unsigned int should_buffer_frame(DataStream ds, const DataFrame frame);
+unsigned int should_buffer_frame(DataStream ds, const DataFrame df);
 
 #endif // VDIFPARSE_TYPES_H

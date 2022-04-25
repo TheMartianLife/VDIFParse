@@ -16,7 +16,6 @@
 // this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
-#include <string.h>
 
 #include "vdifparse_input.h"
 #include "vdifparse_utils.h"
@@ -34,23 +33,6 @@ static enum DataFormat peek_format(const uint8_t* bytes) {
         return VDIF; // to silence the compiler
     }
 }
-
-static DataFrame peek_frame(DataStream ds) {
-    DataFrame frame = init_frame(ds.format);
-    if (ds.format == CODIF) {
-        fread((uint8_t*)frame.codif->header, sizeof(CODIFHeader), 1, get_file_handle(ds));
-        // now metadata
-        fread((uint8_t*)frame.codif->metadata, CODIF_METADATA_BYTES, 1, get_file_handle(ds));       
-    } else {
-        fread((uint8_t*)frame.vdif->header, sizeof(VDIFHeader), 1, get_file_handle(ds));
-        // now extended data, if any
-        if (ds.format == VDIF) {
-            fread((uint8_t*)frame.vdif->extended_data, VDIF_EXTENDED_DATA_BYTES, 1, get_file_handle(ds));
-        }
-    }
-    return frame;
-}
-
 
 int peek_file(DataStream* ds, const char* file_path) {
     // open file in binary mode
@@ -77,27 +59,43 @@ int peek_file(DataStream* ds, const char* file_path) {
     return SUCCESS;
 }
 
+static DataFrame peek_frame(DataStream ds) {
+    DataFrame df = init_frame(ds.format);
+    if (ds.format == CODIF) {
+        fread((uint8_t*)df.codif->header, sizeof(CODIFHeader), 1, get_file_handle(ds.input));
+        // now metadata
+        fread((uint8_t*)df.codif->metadata, CODIF_METADATA_BYTES, 1, get_file_handle(ds.input));       
+    } else {
+        fread((uint8_t*)df.vdif->header, sizeof(VDIFHeader), 1, get_file_handle(ds.input));
+        // now extended data, if any
+        if (ds.format == VDIF) {
+            fread((uint8_t*)df.vdif->extended_data, VDIF_EXTENDED_DATA_BYTES, 1, get_file_handle(ds.input));
+        } else {
+            df.vdif->extended_data = NULL;
+        }
+    }
+    return df;
+}
 
 int buffer_frames(DataStream* ds, unsigned int num_frames) {
     ds->buffered_frames = 0;
     uint32_t frame_length;
-    while (ds->buffered_frames < num_frames && ! feof(get_file_handle(*ds))) {
-        DataFrame frame = peek_frame(*ds);
-        frame_length = get_frame_length(frame);
-        if (should_buffer_frame(*ds, frame)) {
+    while (ds->buffered_frames < num_frames && ! feof(get_file_handle(ds->input))) {
+        DataFrame df = peek_frame(*ds);
+        frame_length = get_frame_length(df);
+        if (should_buffer_frame(*ds, df)) {
             if (ds->format == CODIF) {
-                frame.codif->data = malloc(frame_length);
-                fread(frame.codif->data, frame_length, 1, get_file_handle(*ds));
-                ds->frames[ds->buffered_frames].codif = frame.codif;
+                df.codif->data = malloc(frame_length);
+                fread(df.codif->data, frame_length, 1, get_file_handle(ds->input));
             } else {
-                frame.vdif->data = malloc(frame_length);
-                fread(frame.vdif->data, frame_length, 1, get_file_handle(*ds));
-                ds->frames[ds->buffered_frames].vdif = frame.vdif;
+                df.vdif->data = malloc(frame_length);
+                fread(df.vdif->data, frame_length, 1, get_file_handle(ds->input));
             }
+            ds->frames[ds->buffered_frames] = df;
             ds->buffered_frames++;
         } else {
             // skip over this frame in the file
-            fseek(get_file_handle(*ds), frame_length, SEEK_CUR);
+            fseek(get_file_handle(ds->input), frame_length, SEEK_CUR);
         }
     }
     return (ds->buffered_frames == num_frames) ? SUCCESS : REACHED_END_OF_FILE;

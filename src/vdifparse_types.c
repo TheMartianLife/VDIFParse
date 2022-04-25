@@ -21,34 +21,6 @@
 #include "vdifparse_types.h"
 #include "vdifparse_utils.h"
 
-#define TERM_CHAR '\0'
-
-char* get_error_message(int error_code) {
-    switch(error_code) {
-        case SUCCESS: return "Success.";
-        case FAILED_TO_OPEN_FILE: return "Could not open file.";
-        case FILE_HEADER_INVALID: return "First bytes of file were not a valid header. File may be misaligned or malformed.";
-        case UNRECOGNISED_VERSION: return "Version field was unrecognised value. Cannot interpret data with unknown format.";
-        case REACHED_END_OF_FILE: return "Reached EOF before completing requested action. No more frames available.";
-        case BAD_FORMAT_DESIGNATOR: return "Format designator did not follow ([a-zA-Z]+[_-])?\\d+-\\d+-\\d+(-\\d+)? expected format.";
-        // TODO other types of errors...
-        default: return "INVALID STATUS CODE";
-    }
-}
-
-    // enum DataFormat format;
-
-    // unsigned int data_rate;
-    // unsigned int num_channels;
-    // unsigned int bits_per_sample;
-    // unsigned int num_threads;
-
-    // enum GapPolicy gap_policy;
-
-    // unsigned int buffered_frames;
-    // DataStreamInput input;
-    // DataFrame frames[BUFFER_FRAMES];
-
 DataStream init_stream(enum InputMode mode) {
     DataStreamInput input = init_input(mode);
     DataStream ds = { .input = input };
@@ -129,14 +101,14 @@ int ingest_format_designator(DataStream* ds, const char* format_designator) {
     return SUCCESS;
 }
 
-int ingest_structured_filename(DataStream* ds, char* file_path) {
+int ingest_structured_filename(DataStream* ds, const char* file_path) {
     // char* filename = basename(file_path);
     // TODO this
     return SUCCESS;
 }
 
-unsigned int get_header_length(enum DataFormat format) {
-    switch (format) {
+unsigned int get_header_length(DataFrame df) {
+    switch (df.format) {
         case VDIF_LEGACY: return 16;
         case VDIF: return 32;
         case CODIF: return 64;
@@ -151,15 +123,15 @@ unsigned int get_frame_length(DataFrame df) {
     }
 }
 
-FILE* get_file_handle(DataStream ds) {
-    if (ds.input.mode == FileMode) {
-        return ds.input.file->file_handle;
+FILE* get_file_handle(DataStreamInput di) {
+    if (di.mode == FileMode) {
+        return di.file->file_handle;
     }
-    raise_exception("data stream file handle was NULL or input type was not FileMode.");
+    raise_exception("data stream input file handle was NULL or input type was not FileMode.");
     return (FILE*)NULL;
 }
 
-unsigned int should_buffer_frame(DataStream ds, const DataFrame frame) {
+unsigned int should_buffer_frame(DataStream ds, const DataFrame df) {
     // TODO check if selected thread, if frame is invalid and gap policy is SkipInvalid, etc.
     return 1;
 }

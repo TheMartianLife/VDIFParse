@@ -19,7 +19,25 @@
 #include "vdifparse_input.h"
 #include "vdifparse_utils.h"
 
-DataStream open_file(char* file_path) {
+// MARK: deal with error responses
+
+char* get_error_message(int error_code) {
+    switch(error_code) {
+        case SUCCESS: return "Success.";
+        case FAILURE: return "Failure.";
+        case FAILED_TO_OPEN_FILE: return "Could not open file.";
+        case FILE_HEADER_INVALID: return "First bytes of file were not a valid header. File may be misaligned or malformed.";
+        case UNRECOGNISED_VERSION: return "Version field was unrecognised value. Cannot interpret data with unknown format.";
+        case REACHED_END_OF_FILE: return "Reached EOF before completing requested action. No more frames available.";
+        case BAD_FORMAT_DESIGNATOR: return "Format designator did not follow ([a-zA-Z]+[_-])?\\d+-\\d+-\\d+(-\\d+)? expected format.";
+        // TODO other types of errors...
+        default: return "INVALID STATUS CODE";
+    }
+}
+
+// MARK: initialise stream object
+
+DataStream open_file(const char* file_path) {
     DataStream ds = init_stream(FileMode);
     int status = peek_file(&ds, file_path);
     if (status != SUCCESS) {
@@ -34,10 +52,13 @@ DataStream open_file(char* file_path) {
     return ds;
 }
 
+
 DataStream open_sink() {
     // unfortunately nothing else can be known at this time
     return init_stream(StreamMode);
 }
+
+// MARK: configure objects
 
 int set_format_designator(DataStream* ds, const char* format_designator) {
     int status = ingest_format_designator(ds, format_designator);
@@ -47,10 +68,15 @@ int set_format_designator(DataStream* ds, const char* format_designator) {
     return status;
 }
 
-void set_gap_policy(DataStream* ds, enum GapPolicy policy) { 
-    ds->gap_policy = policy; 
-}
+void close(DataStream* ds) {
+    // free DataStreamInput structs and fields
+    switch (ds->input.mode) {
+        case FileMode: fclose(ds->input.file->file_handle);
+            break;
+        case StreamMode: 
+            break;
+    }
+    // free DataFrame structs and fields
 
-void close(DataStream ds) {
-    
+    free(ds);
 }

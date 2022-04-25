@@ -18,17 +18,14 @@
 #define VDIFPARSE_UTILS_H
 
 #include <stdlib.h>
-#include <stdarg.h>
-#include <stdio.h>
 #include <time.h>
 
 #include "vdifparse_types.h"
 
-
 void raise_exception(const char *format, ...);
 void raise_warning(const char *format, ...);
 
-time_t time_for_epoch_seconds(uint32_t epoch, uint32_t seconds);
+datetime time_for_epoch_seconds(uint32_t epoch, uint32_t seconds);
 
 char* string_for_input_mode(enum InputMode mode);
 char* string_for_data_format(enum DataFormat format);
@@ -37,7 +34,7 @@ char* string_for_gap_policy(enum GapPolicy policy);
 char* string_for_edv(enum VDIFExtendedDataVersion version);
 char* string_for_hertz(uint32_t frequency);
 
-void print_vdif_frame(DataFrame_VDIF frame);
-void print_codif_frame(DataFrame_CODIF frame);
+void print_stream(DataStream ds);
+void print_frame(DataFrame df);
 
 #endif // VDIFPARSE_UTILS_H

@@ -23,7 +23,6 @@ int main(int argc, char** argv) {
 
     // Test first init filemode stream with peek format
     test("Correct format", ds.format == VDIF);
-    test("Correct header length", get_header_length(ds.format) == 32);
     test("Correct default gap policy", ds.gap_policy == SkipInvalid);
 
     // Test set stream attributes
@@ -42,12 +41,13 @@ int main(int argc, char** argv) {
         test("Correct num threads", ds.num_threads == 4);
     }
     
-    DataFrame_VDIF* df = ds.frames[0].vdif;
-    VDIFHeader* header = df->header; // header is correct right now
+    DataFrame df = ds.frames[0];
+    VDIFHeader* header = df.vdif->header;
 
     printf("==DATA FRAME TESTS\n");
 
     // Test ingestion of header field information
+    test("Correct header length", get_header_length(df) == 32);
     test("Correct frame length", header->frame_length == (8032 / 8));
     test("Correct num channels", header->log2_num_channels == log2(2));
     test("Correct bits per sample", header->bits_per_sample == (2 - 1));
@@ -58,6 +58,8 @@ int main(int argc, char** argv) {
     test("Correct seconds from epoch", header->seconds_from_epoch == 7100400);
     test("Correct reference epoch", header->reference_epoch == 43);
     test("Correct frame number", header->data_frame_number == 0);
+
+    print_frame(df);
 
     char* test_file_path2 = "/Users/mars/University/Coursework/data/m1010_yg_no0003.vdif";
 }

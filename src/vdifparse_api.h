@@ -21,16 +21,24 @@
 
 #include "vdifparse_types.h"
 
+// MARK: deal with error responses
+
+char* get_error_message(int error_code);
+
 // MARK: initialise stream object
 
-DataStream open_file(char* file_path);
+DataStream open_file(const char* file_path);
 DataStream open_sink();
 
 // MARK: configure objects
 
 int set_format_designator(DataStream* ds, const char* format_designator);
-void set_gap_policy(DataStream* ds, enum GapPolicy policy);
 
-void close(DataStream ds);
+
+
+
+// MARK: cleanup
+
+void close(DataStream* ds);
 
 #endif // VDIFPARSE_API_H

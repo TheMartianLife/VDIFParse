@@ -16,6 +16,9 @@
 // this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <math.h>
 #include <ctype.h>
 
 #include "vdifparse_utils.h"
@@ -49,16 +52,16 @@ void raise_warning(const char *format, ...) {
 }
 
 
-time_t time_for_epoch_seconds(uint32_t epoch, uint32_t seconds) {
-    uint8_t year = 2000 + (epoch / 2);
+datetime time_for_epoch_seconds(uint32_t epoch, uint32_t seconds) {
+    uint16_t year = 2000 + (epoch / 2);
     uint8_t month = 1 + ((epoch % 2) * 6);
     char* iso_epoch = malloc(32 * sizeof(char));
-    sprintf(iso_epoch, "%d-%d-01T00:00:00+0000", year, month);
-    struct tm tm; // make a time object
-    strptime(iso_epoch, "%Y-%m-%dT%H:%m::%S%z", &tm);
-    // TODO check leap seconds in C time_t handling
-    tm.tm_sec += seconds;
-    return mktime(&tm);
+    sprintf(iso_epoch, "%02d-%02d-01T00:00:00+0000", year, month);
+    datetime dt; // make a time object
+    strptime(iso_epoch, "%Y-%m-%dT%H:%M:%S%z", &dt);
+    time_t time = mktime(&dt);
+    time += seconds;
+    return *gmtime(&time);
 }
 
 
@@ -127,29 +130,46 @@ char* string_for_hertz(uint32_t hertz) {
     return output;
 }
 
-void print_vdif_frame(DataFrame_VDIF frame) {
-    if (frame.header != NULL) {
-        VDIFHeader* header = frame.header;
-        fprintf(stdout, "Invalid flag: %hu\n", header->invalid_flag);
-        fprintf(stdout, "Legacy mode: %hu\n", header->legacy_mode);
-        fprintf(stdout, "Seconds from epoch: %lu\n", (unsigned long)header->seconds_from_epoch);
-        fprintf(stdout, "Unassigned field: %hu\n", header->unassigned_field);
-        fprintf(stdout, "Reference epoch: %hu\n", header->reference_epoch);
-        fprintf(stdout, "Data frame number: %lu\n", (unsigned long)header->data_frame_number);
-        fprintf(stdout, "VDIF version: %hu\n", header->vdif_version_number);
-        fprintf(stdout, "Number of channels (log2): %hu\n", header->log2_num_channels);        
-        fprintf(stdout, "Frame length (/8): %lu\n", (unsigned long)header->frame_length);
-        fprintf(stdout, "Data type: %hu\n", header->data_type);
-        fprintf(stdout, "Bits per sample (-1): %hu\n", header->bits_per_sample);
-        fprintf(stdout, "Thread ID: %u\n", header->thread_id);
-        fprintf(stdout, "Station ID: %u\n", header->station_id);
-    }
-    // TODO extended data fields
+static inline int is_ascii_char(char byte) {
+    return (byte > 0x2f && byte < 0x5b) || (byte > 0x60 && byte < 0x7b);
 }
 
-void print_codif_frame(DataFrame_CODIF frame) {
-    if (frame.header != NULL) {
-
+char* string_for_ascii(uint64_t sequence) {
+    char* ascii = malloc(9 * sizeof(char));
+    int valid_chars = 0;
+    for (int i = 7; i >= 0; i--) {
+        char byte = ((sequence >> (8 * i)) & 0xff);
+        if (is_ascii_char(byte)) {
+            ascii[valid_chars] = byte;
+            valid_chars++;
+        }
     }
-    // TODO metadata fields
+    ascii[valid_chars] = TERM_CHAR;
+    return ascii;
+}
+
+void print_stream(DataStream ds) {
+    // TODO
+}
+
+void print_frame(DataFrame df) {
+    if (df.format == CODIF) {
+
+    } else {
+        VDIFHeader* head = df.vdif->header;
+        char time_str[32];
+        datetime timestamp = time_for_epoch_seconds(head->reference_epoch, head->seconds_from_epoch);
+        strftime(time_str, sizeof(time_str), "%Y-%m-%d %I:%M %p", &timestamp);
+        fprintf(stdout, "VDIF Frame #%lu, begin %s\n", (unsigned long)head->data_frame_number, time_str);
+        fprintf(stdout, "- Invalid: %hu\n", head->invalid_flag);
+        fprintf(stdout, "- Legacy format: %hu\n", head->legacy_mode);
+        fprintf(stdout, "- VDIF version: %hu\n", head->vdif_version_number);
+        fprintf(stdout, "- Number of channels: %lu\n", (unsigned long)pow(2, head->log2_num_channels));        
+        fprintf(stdout, "- Frame length: %lu bytes\n", (unsigned long)head->frame_length * 8);
+        fprintf(stdout, "- Data type: %s\n", string_for_data_type(head->data_type));
+        fprintf(stdout, "- Bits per sample: %u bit(s)\n", head->bits_per_sample + 1);
+        fprintf(stdout, "- Thread ID: %u\n", head->thread_id);
+        fprintf(stdout, "- Station ID: %s\n", string_for_ascii((uint64_t)head->station_id));
+        // TODO extended data fields
+    }
 }
