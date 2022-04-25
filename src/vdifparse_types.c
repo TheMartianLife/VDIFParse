@@ -22,6 +22,7 @@
 #include "vdifparse_utils.h"
 
 #define TERM_CHAR '\0'
+#define BUFFER_FRAMES 1
 
 
 char* get_error_message(int error_code) {
@@ -39,36 +40,37 @@ char* get_error_message(int error_code) {
 
 DataStream init_stream(enum InputMode mode) {
     DataStream ds = {mode};
+    DataStreamInput input = init_input(mode);
+    ds.input = &input;
+    ds.frames = malloc(sizeof(DataFrame*));
     return ds;
 }
 
-void* init_input(enum InputMode mode) {
-    void* di;
+DataStreamInput init_input(enum InputMode mode) {
+    DataStreamInput di = {mode};
     switch (mode) { 
-        case FileMode: di = calloc(1, sizeof(DataStreamInput_File));
-        case StreamMode: di = calloc(1, sizeof(DataStreamInput_Stream));
+        case FileMode: di.file = malloc(sizeof(DataStreamInput_File));
+        case StreamMode: di.stream = malloc(sizeof(DataStreamInput_Stream));
     }
     return di;
 }
 
-void* init_frame(enum DataFormat format) {
-    void* df;
-    void* header;
-    void* data;
+DataFrame init_frame(enum DataFormat format) {
+    DataFrame df = {format};
     if (format == VDIF || format == VDIF_LEGACY) {
-        df = (DataFrame_VDIF*)calloc(1, sizeof(DataFrame_VDIF));
-        header = (VDIFHeader*)malloc(sizeof(VDIFHeader));
+        df.vdif = malloc(sizeof(DataFrame_VDIF));
+        VDIFHeader* header = calloc(1, sizeof(VDIFHeader));
+        df.vdif->header = header;
         if (format == VDIF) {
-            data = malloc(VDIF_EXTENDED_DATA_BYTES);
+            VDIFExtendedData* data = calloc(1, VDIF_EXTENDED_DATA_BYTES);
+            df.vdif->extended_data = data;
         }
-        ((DataFrame_VDIF*)df)->header = header;
-        ((DataFrame_VDIF*)df)->extended_data = data;
     } else if (format == CODIF) {
-        df = (DataFrame_CODIF*)calloc(1, sizeof(DataFrame_CODIF));
-        header = (CODIFHeader*)malloc(sizeof(CODIFHeader));
-        data = malloc(CODIF_METADATA_BYTES);
-        ((DataFrame_VDIF*)df)->header = header;
-        ((DataFrame_VDIF*)df)->extended_data = data;
+        df.codif = malloc(sizeof(DataFrame_CODIF));
+        CODIFHeader* header = calloc(1, sizeof(CODIFHeader));
+        df.codif->header = header;
+        CODIFMetadata* data = calloc(1, CODIF_METADATA_BYTES);
+        df.codif->metadata = data;
     }
     return df;
 }
@@ -117,7 +119,7 @@ int ingest_format_designator(DataStream* ds, const char* format_designator) {
 }
 
 int ingest_structured_filename(DataStream* ds, char* file_path) {
-    char* filename = basename(file_path);
+    // char* filename = basename(file_path);
     // TODO this
     return SUCCESS;
 }
@@ -130,14 +132,23 @@ unsigned int get_header_length(enum DataFormat format) {
     }
 }
 
-FILE* get_file_handle(DataStream ds) {
-    if (ds.mode == FileMode && ds.input != NULL) {
-        return ((DataStreamInput_File*)ds.input)->file_handle;
+unsigned int get_frame_length(DataFrame df) {
+    if (df.format == CODIF) {
+        return df.codif->header->frame_length * 8;
+    } else {
+        return df.vdif->header->frame_length * 8;
     }
+}
+
+FILE* get_file_handle(DataStream ds) {
+    if (ds.input != NULL && ds.input->mode == FileMode) {
+        return ds.input->file->file_handle;
+    }
+    raise_exception("data stream file handle was NULL or input type was not FileMode.");
     return (FILE*)NULL;
 }
 
-unsigned int should_buffer_frame(DataStream ds, const void* frame) {
+unsigned int should_buffer_frame(DataStream ds, const DataFrame frame) {
     // TODO check if selected thread, if frame is invalid and gap policy is SkipInvalid, etc.
     return 1;
 }

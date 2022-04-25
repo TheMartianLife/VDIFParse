@@ -52,7 +52,7 @@ void raise_warning(const char *format, ...) {
 time_t time_for_epoch_seconds(uint32_t epoch, uint32_t seconds) {
     uint8_t year = 2000 + (epoch / 2);
     uint8_t month = 1 + ((epoch % 2) * 6);
-    char* iso_epoch = (char*)malloc(32 * sizeof(char));
+    char* iso_epoch = malloc(32 * sizeof(char));
     sprintf(iso_epoch, "%d-%d-01T00:00:00+0000", year, month);
     struct tm tm; // make a time object
     strptime(iso_epoch, "%Y-%m-%dT%H:%m::%S%z", &tm);
@@ -107,7 +107,7 @@ char* string_for_edv(enum VDIFExtendedDataVersion version) {
 
 
 char* string_for_hertz(uint32_t hertz) {
-    char* output = (char*)malloc(128 * sizeof(char));
+    char* output = malloc(128 * sizeof(char));
     int whole, part = 0;
     if (hertz > _1e9) {
         whole = hertz / _1e9;

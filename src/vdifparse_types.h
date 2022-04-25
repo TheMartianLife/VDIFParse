@@ -34,52 +34,12 @@ enum StatusCode {
     BAD_FORMAT_DESIGNATOR = -6,
 }; // NOTE: keep codes < 0 so that result >= 0 indicates success
 
-char* get_error_message(int error_code);
-
-// MARK: Stream types and functions
-
 enum InputMode { FileMode, StreamMode };
 enum DataFormat { VDIF=1, VDIF_LEGACY, CODIF };
 enum DataType { RealData, ComplexData };
 enum GapPolicy  { SkipInvalid, InsertInvalid };
 
-void* init_input(enum InputMode mode);
-void* init_frame(enum DataFormat format);
-
-unsigned int get_header_length(enum DataFormat format);
-
-typedef struct DataStream {
-    const enum InputMode mode;
-    enum DataFormat format;
-
-    unsigned int data_rate;
-    unsigned int num_channels;
-    unsigned int bits_per_sample;
-    unsigned int num_threads;
-
-    enum GapPolicy gap_policy;
-
-    unsigned int buffered_frames;
-    void* input;
-    void** frames;
-} DataStream;
-
-DataStream init_stream(enum InputMode mode);
-
-int ingest_format_designator(DataStream* ds, const char* format_designator);
-int ingest_structured_filename(DataStream* ds, char* file_path);
-
-static inline void set_data_format(DataStream* ds, enum DataFormat format) { ds->format = format; }
-static inline void set_data_rate(DataStream* ds, unsigned int data_rate ) { ds->data_rate = data_rate; }
-static inline void set_num_channels(DataStream* ds, unsigned int num_channels ) { ds->num_channels = num_channels; }
-static inline void set_bits_per_sample(DataStream* ds, unsigned int bits_per_sample ) { ds->bits_per_sample = bits_per_sample; }
-static inline void set_num_threads(DataStream* ds, unsigned int num_threads ) { ds->num_threads = num_threads; }
-
-// fields that may exist, and will return NULL if not
-FILE* get_file_handle(DataStream ds);
-
-// utility functions
-unsigned int should_buffer_frame(DataStream ds, const void* frame);
+// MARK: Data stream input types
 
 typedef struct DataStreamInput_File {
     FILE* file_handle;
@@ -89,30 +49,16 @@ typedef struct DataStreamInput_Stream {
 
 } DataStreamInput_Stream;
 
-typedef struct DataThread {
+typedef struct {
+    const enum InputMode mode;
+    union {
+        DataStreamInput_File* file;
+        DataStreamInput_Stream* stream;
+    };
+} DataStreamInput;
 
-} DataThread;
 
-// inline unsigned int get_num_channels(DataThread dt);
-// inline unsigned int get_extended_data_version(DataThread dt);
-
-// MARK: VDIF format types and functions
-
-typedef struct VDIFHeader {
-    uint32_t seconds_from_epoch : 30;
-    uint8_t legacy_mode : 1;
-    uint8_t invalid_flag : 1;
-    uint32_t data_frame_number : 24;
-    uint8_t reference_epoch : 6;
-    uint8_t unassigned_field : 2;
-    uint32_t frame_length : 24;
-    uint8_t log2_num_channels : 5;
-    uint8_t vdif_version_number : 3;
-    uint16_t station_id : 16;
-    uint16_t thread_id : 10;
-    uint8_t bits_per_sample : 5;
-    uint8_t data_type : 1;
-} VDIFHeader;
+// MARK: VDIF format types
 
 // may need different cases for different VDIF versions in the future
 // for current keys, see https://vlbi.org/vlbi-standards/vdif/
@@ -125,13 +71,13 @@ enum VDIFExtendedDataVersion {
     Haystack = 0xab, // ... /2019/03/vdif_extension_0xab.pdf
 };
 
-typedef struct VDIFExtendedData {
+typedef struct VDIFExtendedData_None {
     uint32_t extended_data1 : 24;
     uint8_t extended_data_version : 8;
     uint32_t extended_data2 : 32;
     uint32_t extended_data3 : 32;
     uint32_t extended_data4 : 32;
-} VDIFExtendedData;
+} VDIFExtendedData_None;
 
 typedef struct VDIFExtendedData_NICT {
     uint32_t sample_rate : 23;
@@ -182,6 +128,34 @@ typedef struct VDIFExtendedData_Haystack {
     uint32_t extended_data4 : 32;
 } VDIFExtendedData_Haystack;
 
+typedef struct {
+    enum VDIFExtendedDataVersion version;
+    union {
+        VDIFExtendedData_None* none;
+        VDIFExtendedData_NICT* nict;
+        VDIFExtendedData_ALMA* alma;
+        VDIFExtendedData_NRAO* nrao;
+        VDIFExtendedData_Multiplex* multiplex;
+        VDIFExtendedData_Haystack* haystack;
+    };
+}   VDIFExtendedData;
+
+typedef struct VDIFHeader {
+    uint32_t seconds_from_epoch : 30;
+    uint8_t legacy_mode : 1;
+    uint8_t invalid_flag : 1;
+    uint32_t data_frame_number : 24;
+    uint8_t reference_epoch : 6;
+    uint8_t unassigned_field : 2;
+    uint32_t frame_length : 24;
+    uint8_t log2_num_channels : 5;
+    uint8_t vdif_version_number : 3;
+    uint16_t station_id : 16;
+    uint16_t thread_id : 10;
+    uint8_t bits_per_sample : 5;
+    uint8_t data_type : 1;
+} VDIFHeader;
+
 typedef struct DataFrame_VDIF {
     VDIFHeader* header;
     enum VDIFExtendedDataVersion edv;
@@ -189,18 +163,7 @@ typedef struct DataFrame_VDIF {
     uint32_t* data;
 } DataFrame_VDIF;
 
-// inline unsigned long get_seconds_from_epoch(DataFrame_VDIF df);
-// inline unsigned int get_legacy_mode(DataFrame_VDIF df);
-// inline unsigned int get_valid_flag(DataFrame_VDIF df);
-// inline unsigned long get_data_frame_number(DataFrame_VDIF df);
-
-// MARK: CODIF format types and functions
-
-typedef struct CODIFHeader {
-    // TODO fields
-    uint32_t frame_length : 32;
-    // TODO fields
-} CODIFHeader;
+// MARK: CODIF format types
 
 // may need different cases for different CODIF versions in the future
 // TODO: no idea where the canonical source for this is?
@@ -210,19 +173,80 @@ enum CODIFMetadataVersion {
     // TODO are there others?
 };
 
-typedef struct CODIFMetadata {
+typedef struct CODIFMetadata_None {
     uint32_t synch_pattern : 32;
     uint16_t metadata_version : 16;
     uint16_t metadata1 : 16;
     uint64_t metadata2 : 64;
     uint64_t metadata3 : 64;
+} CODIFMetadata_None;
+
+typedef struct {
+    enum CODIFMetadataVersion version;
+    union {
+        CODIFMetadata_None* none;
+    };
 } CODIFMetadata;
 
+typedef struct CODIFHeader {
+    // TODO fields
+    uint32_t frame_length : 32;
+    // TODO fields
+} CODIFHeader;
+
 typedef struct DataFrame_CODIF {
-    const CODIFHeader* header;
-    const enum CODIFMetadataVersion mdv;
-    const CODIFMetadata* metadata;
-    const uint32_t* data;
+    CODIFHeader* header;
+    enum CODIFMetadataVersion mdv;
+    CODIFMetadata* metadata;
+    uint32_t* data;
 } DataFrame_CODIF;
+
+typedef struct {
+    const enum DataFormat format;
+    union {
+        DataFrame_VDIF* vdif;
+        DataFrame_CODIF* codif;
+    };
+} DataFrame;
+
+// MARK: Stream types
+
+typedef struct DataStream {
+    const enum InputMode mode;
+    enum DataFormat format;
+
+    unsigned int data_rate;
+    unsigned int num_channels;
+    unsigned int bits_per_sample;
+    unsigned int num_threads;
+
+    enum GapPolicy gap_policy;
+
+    unsigned int buffered_frames;
+    DataStreamInput* input;
+    DataFrame** frames;
+} DataStream;
+
+char* get_error_message(int error_code);
+
+DataStream init_stream(enum InputMode mode);
+DataStreamInput init_input(enum InputMode mode);
+DataFrame init_frame(enum DataFormat format);
+
+unsigned int get_header_length(enum DataFormat format);
+unsigned int get_frame_length(DataFrame df);
+
+int ingest_format_designator(DataStream* ds, const char* format_designator);
+int ingest_structured_filename(DataStream* ds, char* file_path);
+
+FILE* get_file_handle(DataStream ds);
+
+static inline void set_data_format(DataStream* ds, enum DataFormat format) { ds->format = format; }
+static inline void set_data_rate(DataStream* ds, unsigned int data_rate ) { ds->data_rate = data_rate; }
+static inline void set_num_channels(DataStream* ds, unsigned int num_channels ) { ds->num_channels = num_channels; }
+static inline void set_bits_per_sample(DataStream* ds, unsigned int bits_per_sample ) { ds->bits_per_sample = bits_per_sample; }
+static inline void set_num_threads(DataStream* ds, unsigned int num_threads ) { ds->num_threads = num_threads; }
+
+unsigned int should_buffer_frame(DataStream ds, const DataFrame frame);
 
 #endif // VDIFPARSE_TYPES_H

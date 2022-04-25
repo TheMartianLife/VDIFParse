@@ -30,8 +30,7 @@ DataStream open_file(char* file_path) {
         raise_warning("filename was not structured to specifications.");
     }
     // TODO remove
-    ds.frames = malloc(sizeof(DataFrame_VDIF*));
-    buffer_frames(ds, 1);
+    buffer_frames(&ds, 1);
     return ds;
 }
 

@@ -23,6 +23,6 @@
 
 int peek_file(DataStream* ds, const char* file_path);
 
-int buffer_frames(DataStream ds, unsigned int num_frames);
+int buffer_frames(DataStream* ds, unsigned int num_frames);
 
 #endif // VDIFPARSE_INPUT_H
