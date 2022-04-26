@@ -25,14 +25,14 @@
 void raise_exception(const char *format, ...);
 void raise_warning(const char *format, ...);
 
-datetime time_for_epoch_seconds(uint32_t epoch, uint32_t seconds);
-
+char* string_for_datetime(datetime dt);
 char* string_for_input_mode(enum InputMode mode);
 char* string_for_data_format(enum DataFormat format);
 char* string_for_data_type(enum DataType type);
 char* string_for_gap_policy(enum GapPolicy policy);
 char* string_for_edv(enum VDIFExtendedDataVersion version);
 char* string_for_hertz(uint32_t frequency);
+char* string_for_ascii(uint64_t sequence);
 
 void print_stream(DataStream ds);
 void print_frame(DataFrame df);

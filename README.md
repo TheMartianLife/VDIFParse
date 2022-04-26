@@ -22,18 +22,17 @@ These loosely correlate with the two ways a user is likely to interact with VDIF
 
 ```c
 // OPTION A: StreamMode (open a data sink to buffer data into)
-struct DataStream ds = open_sink();
+struct DataStream ds_stream = open_sink();
 // (configure the data stream here)
-ingest_data(&ds, num_bytes, &port_data);
+ingest_data(&ds_stream, num_bytes, &source_data);
 // (use the data stream here)
-close(&ds);
+close(&ds_stream);
 
 // OPTION B: FileMode (open a file to read from)
-struct DataStream ds = open_file("gre53_ef_scan035_fd1024-16-2-16.vdif");
+struct DataStream ds_file = open_file("gre53_ef_scan035_fd1024-16-2-16.vdif");
 // (configure and use the data stream here)
-close(&ds);
+close(&ds_file);
 ```
-
 **Configuration**
 
 ```c
@@ -69,7 +68,16 @@ decode_samples(&ds, num_samples_to_read, &output_buffer, &valid_samples);
 **Data Inspection**
 
 ```c
-enum DataFormat format = get_data_format(ds);
+// the top-level data stream has some simple fields
+enum DataFormat format = ds.format;
+enum GapPolicy = ds.gap_policy;
+unsigned int num_buffered_frames = ds.buffered_frames;
+
+// but sub-structs require getting to ensure safe use of union types 
+// whose fields may be either VDIF or CODIF formats
+DataFrame df = df.frames[0];
+unsigned long num_channels = get_num_channels(df);
+char* station_id = get_station_id(df);
 
 // TODO fields that vary
 ```

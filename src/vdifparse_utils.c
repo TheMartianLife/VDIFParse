@@ -51,17 +51,10 @@ void raise_warning(const char *format, ...) {
     va_end(args);
 }
 
-
-datetime time_for_epoch_seconds(uint32_t epoch, uint32_t seconds) {
-    uint16_t year = 2000 + (epoch / 2);
-    uint8_t month = 1 + ((epoch % 2) * 6);
-    char* iso_epoch = malloc(32 * sizeof(char));
-    sprintf(iso_epoch, "%02d-%02d-01T00:00:00+0000", year, month);
-    datetime dt; // make a time object
-    strptime(iso_epoch, "%Y-%m-%dT%H:%M:%S%z", &dt);
-    time_t time = mktime(&dt);
-    time += seconds;
-    return *gmtime(&time);
+char* string_for_datetime(datetime dt) {
+    char* time_str = malloc(32 * sizeof(char));
+    strftime(time_str, 32, "%Y-%m-%dT%H:%M:%SZ", &dt);
+    return time_str;
 }
 
 
@@ -149,27 +142,21 @@ char* string_for_ascii(uint64_t sequence) {
 }
 
 void print_stream(DataStream ds) {
-    // TODO
+    fprintf(stdout, "DataStream\n");
+    fprintf(stdout, "_input_mode: %s\n", string_for_input_mode(ds.input.mode));
+    fprintf(stdout, "_gap_policy: %s\n", string_for_gap_policy(ds.gap_policy));
+    fprintf(stdout, "_buffered_frames: %u\n", ds.buffered_frames);
 }
 
 void print_frame(DataFrame df) {
-    if (df.format == CODIF) {
-
-    } else {
-        VDIFHeader* head = df.vdif->header;
-        char time_str[32];
-        datetime timestamp = time_for_epoch_seconds(head->reference_epoch, head->seconds_from_epoch);
-        strftime(time_str, sizeof(time_str), "%Y-%m-%d %I:%M %p", &timestamp);
-        fprintf(stdout, "VDIF Frame #%lu, begin %s\n", (unsigned long)head->data_frame_number, time_str);
-        fprintf(stdout, "- Invalid: %hu\n", head->invalid_flag);
-        fprintf(stdout, "- Legacy format: %hu\n", head->legacy_mode);
-        fprintf(stdout, "- VDIF version: %hu\n", head->vdif_version_number);
-        fprintf(stdout, "- Number of channels: %lu\n", (unsigned long)pow(2, head->log2_num_channels));        
-        fprintf(stdout, "- Frame length: %lu bytes\n", (unsigned long)head->frame_length * 8);
-        fprintf(stdout, "- Data type: %s\n", string_for_data_type(head->data_type));
-        fprintf(stdout, "- Bits per sample: %u bit(s)\n", head->bits_per_sample + 1);
-        fprintf(stdout, "- Thread ID: %u\n", head->thread_id);
-        fprintf(stdout, "- Station ID: %s\n", string_for_ascii((uint64_t)head->station_id));
-        // TODO extended data fields
-    }
+    fprintf(stdout, "DataFrame_%s\n", df.format == CODIF ? "CODIF" : "VDIF");
+    fprintf(stdout, "_station_id: %s\n", get_station_id(df));
+    fprintf(stdout, "_thread_id: %u\n", get_thread_id(df));
+    fprintf(stdout, "_frame_number: %lu\n", get_frame_number(df));
+    fprintf(stdout, "_data_type: %s numbers\n", string_for_data_type(get_data_type(df)));
+    fprintf(stdout, "_num_channels: %lu\n", get_num_channels(df));
+    fprintf(stdout, "_bits_per_sample: %u bit(s)\n", get_bits_per_sample(df));
+    fprintf(stdout, "_num_samples: %llu\n", get_num_samples(df));
+    fprintf(stdout, "_start_time: %s\n", string_for_datetime(get_start_time(df)));
+    // TODO extended data fields
 }

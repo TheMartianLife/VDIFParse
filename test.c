@@ -48,18 +48,21 @@ int main(int argc, char** argv) {
 
     // Test ingestion of header field information
     test("Correct header length", get_header_length(df) == 32);
-    test("Correct frame length", header->frame_length == (8032 / 8));
-    test("Correct num channels", header->log2_num_channels == log2(2));
-    test("Correct bits per sample", header->bits_per_sample == (2 - 1));
-    test("Correct data type", header->data_type == RealData);
-    test("Correct thread ID", header->thread_id == 0);
-    test("Correct format version", header->vdif_version_number == 0);
-    test("Correct invalid flag", header->invalid_flag == 0);
-    test("Correct seconds from epoch", header->seconds_from_epoch == 7100400);
-    test("Correct reference epoch", header->reference_epoch == 43);
-    test("Correct frame number", header->data_frame_number == 0);
+    test("Correct frame length", get_frame_length(df) == 8032);
+    test("Correct num channels", get_num_channels(df) == 2);
+    test("Correct bits per sample", get_bits_per_sample(df) == 2);
+    test("Correct data type",  get_data_type(df) == RealData);
+    test("Correct thread ID", get_thread_id(df) == 0);
+    // test("Correct format version", header->vdif_version_number == 0);
+    // test("Correct invalid flag", header->invalid_flag == 0);
+    test("Correct seconds from epoch", get_seconds_from_epoch(df) == 7100400);
+    // test("Correct reference epoch", header->reference_epoch == 43);
+    test("Correct frame number", get_frame_number(df) == 0);
 
+    print_stream(ds);
     print_frame(df);
 
-    char* test_file_path2 = "/Users/mars/University/Coursework/data/m1010_yg_no0003.vdif";
+    close(&ds);
+
+    // char* test_file_path2 = "/Users/mars/University/Coursework/data/m1010_yg_no0003.vdif";
 }

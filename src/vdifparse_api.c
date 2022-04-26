@@ -72,11 +72,11 @@ void close(DataStream* ds) {
     // free DataStreamInput structs and fields
     switch (ds->input.mode) {
         case FileMode: fclose(ds->input.file->file_handle);
+            free(ds->input.file);
             break;
         case StreamMode: 
+            free(ds->input.stream);
             break;
     }
-    // free DataFrame structs and fields
-
-    free(ds);
+    // TODO free DataFrame structs and fields
 }

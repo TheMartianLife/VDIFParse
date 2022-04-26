@@ -70,6 +70,7 @@ typedef struct {
 
 DataStreamInput init_input(enum InputMode mode);
 FILE* get_file_handle(DataStreamInput di);
+void free_input(DataStreamInput* di);
 
 // MARK: VDIF format types
 
@@ -157,7 +158,7 @@ typedef struct VDIFHeader {
     uint32_t seconds_from_epoch : 30;
     uint8_t legacy_mode : 1;
     uint8_t invalid_flag : 1;
-    uint32_t data_frame_number : 24;
+    uint32_t frame_number : 24;
     uint8_t reference_epoch : 6;
     uint8_t unassigned_field : 2;
     uint32_t frame_length : 24;
@@ -203,9 +204,27 @@ typedef struct {
 } CODIFMetadata;
 
 typedef struct CODIFHeader {
-    // TODO fields
-    uint32_t frame_length : 32;
-    // TODO fields
+    uint32_t frame_number : 32;
+    uint32_t seconds_from_epoch : 32;
+    uint8_t reference_epoch : 8;
+    uint8_t bits_per_sample : 8;
+    uint8_t atypical_data : 1;
+    uint8_t invalid_flag : 1;
+    uint8_t data_type : 1;
+    uint8_t calibration_enabled : 1;
+    uint8_t sample_representation : 4;
+    uint8_t codif_version_number : 5;
+    uint8_t protocol_field : 3;
+    uint16_t reserved_field : 16;
+    uint16_t alignment_period : 16;
+    uint16_t thread_id : 16;
+    uint16_t group_id : 16;
+    uint16_t secondary_id : 16;
+    uint16_t station_id : 16;
+    uint16_t num_channels : 16;
+    uint16_t sample_block_length : 16;
+    uint32_t data_array_length : 32;
+    uint64_t sample_periods : 64;
 } CODIFHeader;
 
 typedef struct DataFrame_CODIF {
@@ -227,8 +246,21 @@ typedef struct {
 } DataFrame;
 
 DataFrame init_frame(enum DataFormat format);
-unsigned int get_header_length(DataFrame df);
 unsigned int get_frame_length(DataFrame df);
+unsigned int get_header_length(DataFrame df);
+unsigned int get_data_length(DataFrame df);
+enum DataType get_data_type(DataFrame df);
+unsigned long get_frame_number(DataFrame df);
+unsigned int get_thread_id(DataFrame df);
+unsigned long get_num_channels(DataFrame df);
+unsigned int get_bits_per_sample(DataFrame df);
+unsigned int get_reference_epoch_month(DataFrame df);
+unsigned int get_reference_epoch_year(DataFrame df);
+unsigned long get_seconds_from_epoch(DataFrame df);
+char* get_station_id(DataFrame df);
+
+datetime get_start_time(DataFrame df);
+unsigned long long get_num_samples(DataFrame df);
 
 
 // MARK: Stream types
@@ -251,16 +283,6 @@ typedef struct DataStream {
 DataStream init_stream(enum InputMode mode);
 int ingest_format_designator(DataStream* ds, const char* format_designator);
 int ingest_structured_filename(DataStream* ds, const char* file_path);
-
-static inline enum DataFormat get_data_format(DataStream ds) { return ds.format; }
-static inline enum GapPolicy get_gap_policy(DataStream ds) { return ds.gap_policy; }
-
-static inline void set_data_format(DataStream* ds, enum DataFormat format) { ds->format = format; }
-static inline void set_data_rate(DataStream* ds, unsigned int data_rate ) { ds->data_rate = data_rate; }
-static inline void set_num_channels(DataStream* ds, unsigned int num_channels ) { ds->num_channels = num_channels; }
-static inline void set_bits_per_sample(DataStream* ds, unsigned int bits_per_sample ) { ds->bits_per_sample = bits_per_sample; }
-static inline void set_num_threads(DataStream* ds, unsigned int num_threads ) { ds->num_threads = num_threads; }
-static inline void set_gap_policy(DataStream* ds, enum GapPolicy policy) { ds->gap_policy = policy; }
 
 unsigned int should_buffer_frame(DataStream ds, const DataFrame df);
 

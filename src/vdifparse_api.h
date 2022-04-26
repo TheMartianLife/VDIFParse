@@ -34,6 +34,8 @@ DataStream open_sink();
 
 int set_format_designator(DataStream* ds, const char* format_designator);
 
+static inline void set_gap_policy(DataStream* ds, enum GapPolicy policy) { ds->gap_policy = policy; }
+
 
 
 
