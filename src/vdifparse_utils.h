@@ -34,6 +34,9 @@ char* string_for_edv(enum VDIFExtendedDataVersion version);
 char* string_for_hertz(uint32_t frequency);
 char* string_for_ascii(uint64_t sequence);
 
+unsigned int* string_to_numeric(const char* string_value);
+int split_string(const char* string_value, const char* separators, char*** out);
+
 void print_stream(DataStream ds);
 void print_frame(DataFrame df);
 

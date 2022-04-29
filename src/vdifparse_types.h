@@ -34,15 +34,18 @@
 #define VDIF_EXTENDED_DATA_BYTES 16
 
 enum StatusCode {
-    SUCCESS = 1,
-    FAILURE = 0,
-    UNKNOWN_FORMAT = -1,
-    FAILED_TO_OPEN_FILE = -2,
-    FILE_HEADER_INVALID = -3,
-    UNRECOGNISED_VERSION = -4,
-    REACHED_END_OF_FILE = -5,
-    BAD_FORMAT_DESIGNATOR = -6,
-}; // NOTE: keep codes < 0 so that result > 0 indicates success
+    SUCCESS = 0,
+    FAILURE = -1,
+    UNKNOWN_FORMAT = -2,
+    FAILED_TO_OPEN_FILE = -3,
+    FILE_HEADER_INVALID = -4,
+    UNRECOGNISED_VERSION = -5,
+    REACHED_END_OF_FILE = -6,
+    REACHED_END_OF_BUFFER = -7,
+    BAD_FORMAT_DESIGNATOR = -8,
+    BAD_FILE_NAME = -9,
+    FAILED_MALLOC = -10,
+}; // NOTE: keep codes < 0 so that result >= 0 indicates success
 
 enum InputMode { FileMode, StreamMode };
 enum DataFormat { VDIF=1, VDIF_LEGACY, CODIF };
@@ -268,15 +271,20 @@ unsigned long long get_num_samples(DataFrame df);
 typedef struct DataStream {
     const DataStreamInput input;
     enum DataFormat format;
+    unsigned int is_compound_datastream;
 
     unsigned int data_rate;
     unsigned int num_channels;
     unsigned int bits_per_sample;
     unsigned int num_threads;
 
+    unsigned long num_selected_channels;
+    unsigned int num_selected_threads;
+
     enum GapPolicy gap_policy;
 
-    unsigned int buffered_frames;
+    unsigned int num_processed_frames;
+    unsigned int num_buffered_frames;
     DataFrame frames[BUFFER_FRAMES];
 } DataStream;
 
@@ -284,6 +292,7 @@ DataStream init_stream(enum InputMode mode);
 int ingest_format_designator(DataStream* ds, const char* format_designator);
 int ingest_structured_filename(DataStream* ds, const char* file_path);
 
+int get_next_buffer_frame(DataStream ds, DataFrame* out);
 unsigned int should_buffer_frame(DataStream ds, const DataFrame df);
 
 #endif // VDIFPARSE_TYPES_H

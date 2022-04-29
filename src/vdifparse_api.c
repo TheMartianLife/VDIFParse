@@ -1,5 +1,5 @@
 // vdifparse_api.c - provides public API functions to open, parse, manipulate,
-// and split VDIF and CODIF files for use in related software
+// and split VDIF and CODIF files for use in related software.
 // Copyright (C) 2022 Mars Buttfield-Addison
 //
 // This program is free software: you can redistribute it and/or modify it under
@@ -16,6 +16,7 @@
 // this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "vdifparse_api.h"
+#include "vdifparse_decode.h"
 #include "vdifparse_input.h"
 #include "vdifparse_utils.h"
 
@@ -29,7 +30,10 @@ char* get_error_message(int error_code) {
         case FILE_HEADER_INVALID: return "First bytes of file were not a valid header. File may be misaligned or malformed.";
         case UNRECOGNISED_VERSION: return "Version field was unrecognised value. Cannot interpret data with unknown format.";
         case REACHED_END_OF_FILE: return "Reached EOF before completing requested action. No more frames available.";
+        case REACHED_END_OF_BUFFER: return "Reached buffer depth limit before completing requested action. No more frames available.";
         case BAD_FORMAT_DESIGNATOR: return "Format designator did not follow ([a-zA-Z]+[_-])?\\d+-\\d+-\\d+(-\\d+)? expected format.";
+        case BAD_FILE_NAME: return "File name did not follow expected <experiment>_<station>_<scan>[_<aux>...].<extension> format.";
+        case FAILED_MALLOC: return "Could not allocate required memory.";
         // TODO other types of errors...
         default: return "INVALID STATUS CODE";
     }
@@ -48,7 +52,7 @@ DataStream open_file(const char* file_path) {
         raise_warning("filename was not structured to specifications.");
     }
     // TODO remove
-    buffer_frames(&ds, 1);
+    buffer_frames(&ds, BUFFER_FRAMES);
     return ds;
 }
 
@@ -66,6 +70,47 @@ int set_format_designator(DataStream* ds, const char* format_designator) {
         raise_warning("format designator %s could not be parsed.", format_designator);
     }
     return status;
+}
+
+// MARK: process data
+
+int init_decode_output(DataStream ds, unsigned long num_samples, float** out, unsigned long* valid_samples) {
+    out = malloc(ds.num_channels * sizeof(float*));
+    if (out == NULL) { return FAILED_MALLOC; }
+    valid_samples = malloc(ds.num_selected_channels * sizeof(float));
+    if (valid_samples == NULL) { return FAILED_MALLOC; }
+    for (long i = 0; i < ds.num_selected_channels; i++) {
+        out[i] = malloc(ds.num_selected_channels * sizeof(float));
+        if (out[i] == NULL) { return FAILED_MALLOC; }
+        valid_samples[i] = 0;
+    }
+    return SUCCESS;
+}
+
+int decode_samples(DataStream ds, unsigned long num_samples, float** out, unsigned long* valid_samples) {
+    // if samples to decode is 0, we have already succeeded
+    if (num_samples < 1) { return SUCCESS; }
+    int status;
+    // if output buffers are not set up yet, do that
+    // and if that fails, return with the error arising from the attempt
+    if (out == NULL || out[0] == NULL || valid_samples == NULL) {
+        status = init_decode_output(ds, num_samples, out, valid_samples);
+        if (status != SUCCESS) { return status; }
+    }
+    // otherwise we actually have to do work
+    unsigned long decoded_samples = 0;
+    int last_buffer = 0;
+    DataFrame* next_frame = malloc(sizeof(DataFrame));
+    int has_frame = get_next_buffer_frame(ds, next_frame);
+    while (has_frame && decoded_samples < num_samples) {
+        status = decode_frame(ds, next_frame, num_samples - decoded_samples, out, valid_samples);
+        if (status < SUCCESS) { return status; }
+        decoded_samples += status; // otherwise response = samples decoded
+        has_frame = get_next_buffer_frame(ds, next_frame); // get next_frame
+    }
+    // TODO replace for StreamMode
+    if (decoded_samples < num_samples) { return REACHED_END_OF_FILE; }
+    return SUCCESS;
 }
 
 void close(DataStream* ds) {

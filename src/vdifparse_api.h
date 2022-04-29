@@ -1,5 +1,5 @@
 // vdifparse_api.h - provides public API functions to open, parse, manipulate,
-// and split VDIF and CODIF files for use in related software
+// and split VDIF and CODIF files for use in related software.
 // Copyright (C) 2022 Mars Buttfield-Addison
 //
 // This program is free software: you can redistribute it and/or modify it under
@@ -36,7 +36,9 @@ int set_format_designator(DataStream* ds, const char* format_designator);
 
 static inline void set_gap_policy(DataStream* ds, enum GapPolicy policy) { ds->gap_policy = policy; }
 
+// MARK: process data
 
+int decode_samples(DataStream ds, unsigned long num_samples, float** out, unsigned long* valid_samples);
 
 
 // MARK: cleanup

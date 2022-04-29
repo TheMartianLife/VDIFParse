@@ -78,9 +78,10 @@ static DataFrame peek_frame(DataStream ds) {
 }
 
 int buffer_frames(DataStream* ds, unsigned int num_frames) {
-    ds->buffered_frames = 0;
+    ds->num_buffered_frames = 0;
+    ds->num_processed_frames = 0;
     uint32_t frame_length;
-    while (ds->buffered_frames < num_frames && ! feof(get_file_handle(ds->input))) {
+    while (ds->num_buffered_frames < num_frames && ! feof(get_file_handle(ds->input))) {
         DataFrame df = peek_frame(*ds);
         frame_length = get_frame_length(df);
         if (should_buffer_frame(*ds, df)) {
@@ -91,12 +92,13 @@ int buffer_frames(DataStream* ds, unsigned int num_frames) {
                 df.vdif->data = malloc(frame_length);
                 fread(df.vdif->data, frame_length, 1, get_file_handle(ds->input));
             }
-            ds->frames[ds->buffered_frames] = df;
-            ds->buffered_frames++;
+            ds->frames[ds->num_buffered_frames] = df;
+            ds->num_buffered_frames++;
         } else {
             // skip over this frame in the file
             fseek(get_file_handle(ds->input), frame_length, SEEK_CUR);
         }
     }
-    return (ds->buffered_frames == num_frames) ? SUCCESS : REACHED_END_OF_FILE;
+    return (ds->num_buffered_frames == num_frames) ? SUCCESS : REACHED_END_OF_FILE;
 }
+

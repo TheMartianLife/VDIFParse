@@ -141,11 +141,38 @@ char* string_for_ascii(uint64_t sequence) {
     return ascii;
 }
 
+unsigned int* string_to_numeric(const char* string_value) {
+    char* non_digits;
+    unsigned int* num_ptr = malloc(sizeof(unsigned int));
+    unsigned int num_value = (unsigned int)strtoul(string_value, &non_digits, 10);
+    if (string_value[0] != TERM_CHAR && *non_digits != TERM_CHAR) {
+        // cast to numeric failed
+        return (unsigned int*)NULL;
+    }
+    num_ptr = &num_value;
+    return num_ptr;
+}
+
+int split_string(const char* string_value, const char* separators, char*** out) {
+    int length = strlen(string_value);
+    char** tokens = NULL;
+    int num_tokens = 0;
+    char* token = strtok(strdup(string_value), separators);
+    while (token != NULL) {
+        num_tokens++;
+        tokens = realloc(tokens, num_tokens * sizeof(char*));
+        tokens[num_tokens - 1] = token;
+        token = strtok(NULL, separators);
+    }
+    *out = tokens;
+    return num_tokens;
+}
+
 void print_stream(DataStream ds) {
     fprintf(stdout, "DataStream\n");
     fprintf(stdout, "_input_mode: %s\n", string_for_input_mode(ds.input.mode));
     fprintf(stdout, "_gap_policy: %s\n", string_for_gap_policy(ds.gap_policy));
-    fprintf(stdout, "_buffered_frames: %u\n", ds.buffered_frames);
+    fprintf(stdout, "_buffered_frames: %u\n", ds.num_buffered_frames);
 }
 
 void print_frame(DataFrame df) {

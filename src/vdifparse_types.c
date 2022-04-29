@@ -20,7 +20,13 @@
 #include <math.h>
 
 #include "vdifparse_types.h"
+#include "vdifparse_input.h"
 #include "vdifparse_utils.h"
+
+#define FD_DRATE_ARG 0
+#define FD_NCHAN_ARG 1
+#define FD_NBITS_ARG 2
+#define FD_NTHREAD_ARG 3
 
 DataStream init_stream(enum InputMode mode) {
     DataStreamInput input = init_input(mode);
@@ -60,51 +66,98 @@ DataFrame init_frame(enum DataFormat format) {
 }
 
 int ingest_format_designator(DataStream* ds, const char* format_designator) {
+    char* designator = strdup(format_designator); // duplicate const
     // first, let's see if this is a "simple" data stream
-    // TODO: support complex data streams?
-    char* designator = strdup(format_designator);
-    if (strchr(designator, '+') == NULL) {
-        char* arg = strtok(designator, "_-"); // strsep(format_designator, "_-");
-        int arg_num = 0;
-        int arg_value = 0;
-        char* non_digits;
-        while (arg != NULL) {
-            arg_value = strtoul(arg, &non_digits, 10);
-            // check if arg is numeric based on success of cast to ul
-            if (arg[0] != TERM_CHAR && *non_digits != TERM_CHAR) {
-                // assume this is the format name
-                // TODO interpret this for data type/format?
-                if (arg_num != 0) {
-                    return BAD_FORMAT_DESIGNATOR; // only first arg may be non-numeric
-                }
-            } else {
-                switch (arg_num) {
-                    case 0: arg_num++; 
-                    case 1: ds->data_rate = (unsigned int)arg_value;
-                        break;
-                    case 2: ds->num_channels = (unsigned int)arg_value;
-                        break;
-                    case 3: ds->bits_per_sample = (unsigned int)arg_value;
-                        break;
-                    case 4: ds->num_threads = (unsigned int)arg_value;
-                        break;
-                    default: return BAD_FORMAT_DESIGNATOR; // too many args
-                }
+    char** combined_streams;
+    int num_streams = split_string(format_designator, "+", &combined_streams);
+    if (num_streams > 1) {
+        // TODO: support complex data streams?
+        ds->is_compound_datastream = 1;
+    } else if (num_streams == 1) {
+        char** stream_args;
+        int num_args = split_string(combined_streams[0], "_-", &stream_args);
+        // check whether args beging with optional format prefix
+        int offset = (string_to_numeric(stream_args[0]) == NULL);
+        for (int i = FD_DRATE_ARG; i <= FD_NTHREAD_ARG; i ++) {
+            // check if optional thread count arg has been omitted
+            if (i == FD_NTHREAD_ARG && num_args <= (FD_NTHREAD_ARG + offset)) {
+                ds->num_threads = 1;
+                continue;
             }
-            arg = strtok(NULL, "_-");
-            arg_num++;
+            // otherwise get int of string arg value and assign
+            unsigned int* value = string_to_numeric(stream_args[i + offset]);
+            if (value == NULL) { return BAD_FORMAT_DESIGNATOR; }
+            switch (i) {
+                case FD_DRATE_ARG: ds->data_rate = *value;
+                    break;
+                case FD_NCHAN_ARG: ds->num_channels = *value;
+                    break;
+                case FD_NBITS_ARG: ds->bits_per_sample = *value;
+                    break;
+                case FD_NTHREAD_ARG: ds->num_threads = *value;
+                    break;
+                default: break; // to appease the compiler         
+            }
         }
-        if (arg_num < 5) {
-            // num threads arg was omitted, so use default value
-            ds->num_threads = (unsigned int)1;
-        }
+        return SUCCESS;
     }
-    return SUCCESS;
+    return BAD_FORMAT_DESIGNATOR;
+}
+
+static int ingest_aux_info(DataStream* ds, const char* string_value) {
+    if (strlen(string_value) < 3) { return FAILURE; }
+    char* code = "xx"; // for first 2 chars
+    memcpy(code, &string_value, 2);
+    char* value; // for the remaining chars
+    memcpy(value, &string_value[2], strlen(string_value) - 2);
+    if (strcasecmp(code, "st") == 0) {
+        // start time
+    } else if (strcasecmp(code, "fd") == 0) {
+        // format designator maybe present, or may just say "compound"
+        if (strcasecmp(value, "compound") == 0) {
+            ds->is_compound_datastream = 1;
+        } else {
+            return ingest_format_designator(ds, value);
+        }
+    } else {
+        return BAD_FILE_NAME;
+    }
+    return SUCCESS; 
 }
 
 int ingest_structured_filename(DataStream* ds, const char* file_path) {
-    // char* filename = basename(file_path);
-    // TODO this
+    char* file_name = basename(strdup(file_path)); // duplicate const
+    char** args;
+    int num_args = split_string(file_name, "_", &args);
+    if (num_args < 4) { return BAD_FILE_NAME; }
+    int status = SUCCESS;
+    for (int i = 0; i < num_args; i++) {
+        if (i == num_args - 1) {
+            // last arg should contain file extension
+            // TODO ingest data format from this if possible?
+            char* separator = strchr(args[i], '.');
+            if(separator != NULL) { // if there is a dot in this arg
+                *separator = '\0'; // keep only what was before the dot
+            }
+        }
+        switch (i) {
+            case 0: // experiment name
+                // TODO save somewhere?
+                break;
+            case 1: // station code
+                // TODO save somewhere?
+                break;
+            case 2: // scan name
+                // TODO save somewhere?
+                break;
+            case 3: // start time or aux info
+                // TODO save somewhere?
+                break;
+            default: // aux info
+                status = ingest_aux_info(ds, args[i]);
+        }
+        if (status != SUCCESS) { return status; }
+    }
     return SUCCESS;
 }
 
@@ -247,6 +300,27 @@ FILE* get_file_handle(DataStreamInput di) {
     }
     raise_exception("data stream input file handle was NULL or input type was not FileMode.");
     return (FILE*)NULL;
+}
+
+int get_next_buffer_frame(DataStream ds, DataFrame* frame) {
+    // TODO thread lock
+    unsigned int next_frame_num = ds.num_processed_frames;
+    int status;
+    if (next_frame_num >= ds.num_buffered_frames && ds.input.mode == FileMode) {
+        // buffer more frames from file
+        status = buffer_frames(&ds, BUFFER_FRAMES);
+    }
+    ds.num_processed_frames++;
+    // if we succeeded in finding more frames
+    if (next_frame_num < ds.num_buffered_frames) {
+        frame = &ds.frames[next_frame_num];
+        // TODO thread unlock
+        return SUCCESS;
+    } else {
+        frame = (DataFrame*)NULL;
+        // TODO thread unlock
+        return (ds.input.mode == FileMode) ? status : REACHED_END_OF_BUFFER;
+    }
 }
 
 unsigned int should_buffer_frame(DataStream ds, const DataFrame df) {
