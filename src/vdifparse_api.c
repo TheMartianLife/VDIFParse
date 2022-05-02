@@ -72,38 +72,34 @@ int set_format_designator(DataStream* ds, const char* format_designator) {
 
 // MARK: process data
 
-int init_decode_output(DataStream ds, unsigned long num_samples, float*** out, unsigned long** valid_samples) {
+int init_decode_output(DataStream ds, unsigned long num_samples, float*** out, DecodeMonitor* statistics) {
     float** new_out = malloc(ds.num_selected_channels * sizeof(float*));
     if (new_out == NULL) { return FAILED_MALLOC; }
-    unsigned long* new_samples = malloc(ds.num_selected_channels * sizeof(float));
-    if (new_samples == NULL) { return FAILED_MALLOC; }
     for (long i = 0; i < ds.num_selected_channels; i++) {
         new_out[i] = malloc(num_samples * sizeof(float));
         if (new_out[i] == NULL) { return FAILED_MALLOC; }
-        new_samples[i] = 0;
     }
     *out = new_out;
-    *valid_samples = new_samples;
+    *statistics = init_monitor(ds.num_selected_channels);
     return SUCCESS;
 }
 
-int decode_samples(DataStream* ds, unsigned long num_samples, float*** out, unsigned long** valid_samples) {
+int decode_samples(DataStream* ds, unsigned long num_samples, float*** out, DecodeMonitor* statistics) {
     // if samples to decode is 0, we have already succeeded
     if (num_samples < 1) { return SUCCESS; }
     int status;
     // if output buffers are not set up yet, do that
     // and if that fails, return with the error arising from the attempt
-    if (*out == NULL || *out[0] == NULL || *valid_samples == NULL) {
-        status = init_decode_output(*ds, num_samples, out, valid_samples);
+    if (*out == NULL || *out[0] == NULL || statistics == NULL) {
+        status = init_decode_output(*ds, num_samples, out, statistics);
         if (status != SUCCESS) { return status; }
     }
     // otherwise we actually have to do work
     unsigned long decoded_samples = 0;
-    int last_buffer = 0;
     DataFrame* next_frame = malloc(sizeof(DataFrame));
     int has_frame = (get_next_buffer_frame(ds, &next_frame) == SUCCESS);
     while (has_frame && decoded_samples < num_samples) {
-        status = decode_frame(*ds, next_frame, num_samples - decoded_samples, out, valid_samples);
+        status = decode_frame(*ds, next_frame, num_samples - decoded_samples, out, statistics);
         // TODO remove above
         // status = decode_frame(*ds, next_frame, num_samples - decoded_samples, &out[decoded_samples], valid_samples);
         if (status < SUCCESS) { return status; }

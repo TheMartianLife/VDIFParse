@@ -2,8 +2,8 @@
 #include <string.h>
 #include <math.h>
 
-#include "src/vdifparse_utils.h"
-#include "vdifparse.h"
+#include "../src/vdifparse_utils.h"
+#include "../vdifparse.h"
 
 
 void test(char* description, uint8_t condition) {
@@ -32,9 +32,9 @@ int main(int argc, char** argv) {
     ds.num_selected_channels = 2; // TODO remove
 
     float** out = NULL;
-    unsigned long* valid_samples = NULL;
+    DecodeMonitor* statistics = NULL;
     unsigned int num_samples = 4;
-    decode_samples(&ds, num_samples, &out, &valid_samples);
+    decode_samples(&ds, num_samples, &out, statistics);
     double samples[4][2] = { { -3.335900, -3.335900 }, 
         { -1.000000, -3.335900 },
         { 1.000000, 3.335900 }, 
@@ -64,7 +64,6 @@ int main(int argc, char** argv) {
     }
     
     DataFrame df = ds.frames[0];
-    VDIFHeader* header = df.vdif->header;
 
     printf("==DATA FRAME TESTS\n");
 

@@ -68,7 +68,6 @@ DataFrame init_frame(enum DataFormat format) {
 }
 
 int ingest_format_designator(DataStream* ds, const char* format_designator) {
-    char* designator = strdup(format_designator); // duplicate const
     // first, let's see if this is a "simple" data stream
     char** combined_streams;
     int num_streams = split_string(format_designator, "+", &combined_streams);
@@ -110,8 +109,9 @@ static int ingest_aux_info(DataStream* ds, const char* string_value) {
     if (strlen(string_value) < 3) { return FAILURE; }
     char* code = "xx"; // for first 2 chars
     memcpy(code, &string_value, 2);
-    char* value; // for the remaining chars
-    memcpy(value, &string_value[2], strlen(string_value) - 2);
+    int value_length = strlen(string_value) - 2;
+    char* value = malloc(value_length * sizeof(char)); // for the remaining chars
+    memcpy(value, &string_value[2], value_length);
     if (strcasecmp(code, "st") == 0) {
         // start time
     } else if (strcasecmp(code, "fd") == 0) {
@@ -310,8 +310,6 @@ unsigned long long get_num_samples(DataFrame df) {
     }
     return 0;
 }
-
-
 
 datetime get_start_time(DataFrame df) {
     unsigned int year = get_reference_epoch_year(df);

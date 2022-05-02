@@ -38,7 +38,7 @@ static inline void set_gap_policy(DataStream* ds, enum GapPolicy policy) { ds->g
 
 // MARK: process data
 
-int decode_samples(DataStream* ds, unsigned long num_samples, float*** out, unsigned long** valid_samples);
+int decode_samples(DataStream* ds, unsigned long num_samples, float*** out, DecodeMonitor* statistics);
 
 
 // MARK: cleanup

@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 // one arg that may be externally user-defined
 #ifndef BUFFER_FRAMES
@@ -72,7 +73,22 @@ typedef struct {
 
 DataStreamInput init_input(enum InputMode mode);
 FILE* get_file_handle(DataStreamInput di);
-void free_input(DataStreamInput* di);
+
+// MARK: Decode monitor (decode statistics) types
+
+typedef struct DecodeChannelMonitor {
+    unsigned long num_decoded_samples;
+    unsigned long num_invalid_samples;
+    unsigned long num_decoded_frames;
+    unsigned long num_invalid_frames;
+    datetime first_timestep;
+    datetime last_timestep;
+} DecodeChannelMonitor;
+
+typedef struct DecodeMonitor {
+    unsigned long decoded_channels;
+    DecodeChannelMonitor* channels;
+} DecodeMonitor;
 
 // MARK: VDIF format types
 
@@ -103,8 +119,7 @@ typedef struct VDIFExtendedData_NICT {
     uint64_t station_name : 64;
 } VDIFExtendedData_NICT;
 
-typedef struct VDIFExtendedData_ALMA {
-    // TODO decode "magic nibble" ?
+typedef struct VDIFExtendedData_ALMA { // TODO
     uint32_t synch_identifier : 24;
     uint8_t extended_data_version : 8;
     uint32_t extended_data2 : 32;
@@ -136,7 +151,7 @@ typedef struct VDIFExtendedData_Multiplex {
     uint64_t validity_mask : 64;
 } VDIFExtendedData_Multiplex;
 
-typedef struct VDIFExtendedData_Haystack {
+typedef struct VDIFExtendedData_Haystack { // TODO
     uint32_t extended_data1 : 24;
     uint8_t extended_data_version : 8;
     uint32_t extended_data2 : 32;
@@ -174,7 +189,6 @@ typedef struct VDIFHeader {
 
 typedef struct DataFrame_VDIF {
     VDIFHeader* header;
-    enum VDIFExtendedDataVersion edv;
     VDIFExtendedData* extended_data;
     uint32_t* data;
 } DataFrame_VDIF;
@@ -197,6 +211,8 @@ typedef struct CODIFMetadata_None {
     uint64_t metadata2 : 64;
     uint64_t metadata3 : 64;
 } CODIFMetadata_None;
+
+// TODO where to get spec for 0x5043?
 
 typedef struct {
     enum CODIFMetadataVersion version;
@@ -231,7 +247,6 @@ typedef struct CODIFHeader {
 
 typedef struct DataFrame_CODIF {
     CODIFHeader* header;
-    enum CODIFMetadataVersion mdv;
     CODIFMetadata* metadata;
     uint32_t* data;
 } DataFrame_CODIF;
@@ -260,10 +275,8 @@ unsigned int get_reference_epoch_month(DataFrame df);
 unsigned int get_reference_epoch_year(DataFrame df);
 unsigned long get_seconds_from_epoch(DataFrame df);
 char* get_station_id(DataFrame df);
-
-datetime get_start_time(DataFrame df);
 unsigned long long get_num_samples(DataFrame df);
-
+datetime get_start_time(DataFrame df);
 
 // MARK: Stream types
 

@@ -1,4 +1,5 @@
-// vdifio.h - imports main API-available functions from vdifio_api.h
+// vdifparse_lookup.h - provides LookupHolder type and initialises lookup tables
+// for offset binary-encoded data when required (lazily).
 // Copyright (C) 2022 Mars Buttfield-Addison
 //
 // This program is free software: you can redistribute it and/or modify it under
@@ -13,15 +14,25 @@
 //
 // You should have received a copy of the GNU General Public License along with
 // this program. If not, see <http://www.gnu.org/licenses/>.
+#ifndef VDIFPARSE_LOOKUP_H
+#define VDIFPARSE_LOOKUP_H
 
-#ifndef VDIFPARSE_H
-#define VDIFPARSE_H
+#define M5A_2BIT_HIGH 3.3359
+#define FOUR_BIT_1_SIGMA 2.95
+// #define BB_2BIT_HIGH 3.316505 // from baseband.py
 
-#include "src/vdifparse_api.h"
+#include "vdifparse_types.h"
 
-const char program[] = "VDIFParse";
-const char author[]  = "Mars Buttfield-Addison <m.buttfield-addison@utas.edu.au>";
-const char version[] = "0.1";
-const char verdate[] = "2022-05-02";
+typedef struct LookupHolder {
+    float** luts1bit;
+    float** luts2bit;
+    float** luts4bit;
+    float** luts8bit;
+    float** luts1bit_complex;
+    float** luts2bit_complex;
+    float** luts4bit_complex;
+} LookupHolder;
 
-#endif // VDIFPARSE_H
+float** get_lookup_table(char num_bits, enum DataType type);
+
+#endif // VDIFPARSE_LOOKUP_H

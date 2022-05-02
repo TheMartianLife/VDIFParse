@@ -154,7 +154,6 @@ unsigned int* string_to_numeric(const char* string_value) {
 }
 
 int split_string(const char* string_value, const char* separators, char*** out) {
-    int length = strlen(string_value);
     char** tokens = NULL;
     int num_tokens = 0;
     char* token = strtok(strdup(string_value), separators);

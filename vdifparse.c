@@ -1,4 +1,4 @@
-// vdifio.h - imports main API-available functions from vdifio_api.h
+// vdifio.c - minimal main() functionality for decoding a single file
 // Copyright (C) 2022 Mars Buttfield-Addison
 //
 // This program is free software: you can redistribute it and/or modify it under
@@ -14,14 +14,10 @@
 // You should have received a copy of the GNU General Public License along with
 // this program. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef VDIFPARSE_H
-#define VDIFPARSE_H
+#include "vdifparse.h"
 
-#include "src/vdifparse_api.h"
-
-const char program[] = "VDIFParse";
-const char author[]  = "Mars Buttfield-Addison <m.buttfield-addison@utas.edu.au>";
-const char version[] = "0.1";
-const char verdate[] = "2022-05-02";
-
-#endif // VDIFPARSE_H
+int main(int argc, char** argv) {
+    // TODO get file input
+    // TODO flags for decode/read
+    // TODO stream file output
+}

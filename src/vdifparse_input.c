@@ -64,12 +64,14 @@ static DataFrame peek_frame(DataStream ds) {
     if (ds.format == CODIF) {
         fread((uint8_t*)df.codif->header, sizeof(CODIFHeader), 1, get_file_handle(ds.input));
         // now metadata
-        fread((uint8_t*)df.codif->metadata, CODIF_METADATA_BYTES, 1, get_file_handle(ds.input));       
+        fread((uint8_t*)df.codif->metadata->none, CODIF_METADATA_BYTES, 1, get_file_handle(ds.input)); 
+        df.codif->metadata->version = df.codif->metadata->none->metadata_version;
     } else {
         fread((uint8_t*)df.vdif->header, sizeof(VDIFHeader), 1, get_file_handle(ds.input));
         // now extended data, if any
         if (ds.format == VDIF) {
-            fread((uint8_t*)df.vdif->extended_data, VDIF_EXTENDED_DATA_BYTES, 1, get_file_handle(ds.input));
+            fread((uint8_t*)df.vdif->extended_data->none, VDIF_EXTENDED_DATA_BYTES, 1, get_file_handle(ds.input));
+            df.vdif->extended_data->version = df.vdif->extended_data->none->extended_data_version;
         } else {
             df.vdif->extended_data = NULL;
         }

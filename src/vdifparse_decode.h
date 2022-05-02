@@ -19,6 +19,7 @@
 
 #include "vdifparse_types.h"
 
-int decode_frame(DataStream ds, const DataFrame* df, unsigned long num_samples, float*** out, unsigned long** valid_samples);
+DecodeMonitor init_monitor(unsigned long num_channels);
+int decode_frame(DataStream ds, const DataFrame* df, unsigned long num_samples, float*** out, DecodeMonitor* statistics);
 
 #endif // VDIFPARSE_DECODE_H

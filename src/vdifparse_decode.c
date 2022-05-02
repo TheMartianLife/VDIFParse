@@ -23,14 +23,28 @@
 #define REP_FLOAT 2
 #define REP_INVALID 3
 
-int decode_frame(DataStream ds, const DataFrame* df, unsigned long num_samples, float*** out, unsigned long** valid_samples) {
+static DecodeChannelMonitor init_channel_monitor() {
+    DecodeChannelMonitor channel_monitor = { 0 };
+    return channel_monitor;
+}
+
+DecodeMonitor init_monitor(unsigned long num_channels) {
+    DecodeMonitor monitor = { num_channels };
+    monitor.channels = malloc(num_channels * sizeof(DecodeChannelMonitor));
+    for (int i = 0; i < num_channels; i++) {
+        monitor.channels[i] = init_channel_monitor();
+    }
+    return monitor;
+}
+
+int decode_frame(DataStream ds, const DataFrame* df, unsigned long num_samples, float*** out, DecodeMonitor* statistics) {
     unsigned long decoded_samples = 0;
     int encoding = REP_OFFSET;
     if (df->format == CODIF) {
         encoding = df->codif->header->sample_representation;
     }
     
-    unsigned long long sample = 0; 
+    unsigned long long first_sample = 0; 
     // TODO scrub for cursor if mid-frame
     unsigned long long frame_samples = get_num_samples(*df);
     // TODO what to do if not encoded? e.g. CODIF float type?
@@ -39,7 +53,7 @@ int decode_frame(DataStream ds, const DataFrame* df, unsigned long num_samples, 
 
     // iterate over frame samples
 
-    for (int i = 0; i < get_num_samples(*df); i++) {
+    for (int i = first_sample; i < get_num_samples(*df); i++) {
         // TODO remove
         unsigned long word = df->vdif->data[i / 8];
         float* byte = lookup[word & 0xff];
@@ -61,8 +75,8 @@ int decode_frame(DataStream ds, const DataFrame* df, unsigned long num_samples, 
         }
     }
     // TODO remove
-    (*valid_samples)[0] = decoded_samples;
-    (*valid_samples)[1] = decoded_samples;
+    statistics->channels[0].num_decoded_samples += decoded_samples;
+    statistics->channels[1].num_decoded_samples += decoded_samples;
 
     // TODO some sort of "incorporate partial result" function (for thread safety) here
 
