@@ -29,6 +29,28 @@ int main(int argc, char** argv) {
     set_gap_policy(&ds, InsertInvalid);
     test("Successfully set gap policy", ds.gap_policy == InsertInvalid);
 
+    ds.num_selected_channels = 2; // TODO remove
+
+    float** out = NULL;
+    unsigned long* valid_samples = NULL;
+    unsigned int num_samples = 4;
+    decode_samples(&ds, num_samples, &out, &valid_samples);
+    double samples[4][2] = { { -3.335900, -3.335900 }, 
+        { -1.000000, -3.335900 },
+        { 1.000000, 3.335900 }, 
+        { 1.000000, 3.335900 }
+    };
+    int matching_samples = 1;
+    for (int i = 0; i < num_samples; i++) {
+        if (out[0][i] != (float)samples[i][0]) {
+            matching_samples = matching_samples && 0;
+        }
+        if (out[1][i] != (float)samples[i][1]) {
+            matching_samples = matching_samples && 0;
+        }
+    }
+    test("Correct decode of first data samples", matching_samples);
+
     printf("==FORMAT DESIGNATOR TESTS\n");
 
     // Test use of format designator to provide information

@@ -81,9 +81,9 @@ int buffer_frames(DataStream* ds, unsigned int num_frames) {
     ds->num_buffered_frames = 0;
     ds->num_processed_frames = 0;
     uint32_t frame_length;
-    while (ds->num_buffered_frames < num_frames && ! feof(get_file_handle(ds->input))) {
+    while (ds->num_buffered_frames < num_frames && !feof(get_file_handle(ds->input))) {
         DataFrame df = peek_frame(*ds);
-        frame_length = get_frame_length(df);
+        frame_length = get_data_length(df);
         if (should_buffer_frame(*ds, df)) {
             if (ds->format == CODIF) {
                 df.codif->data = malloc(frame_length);

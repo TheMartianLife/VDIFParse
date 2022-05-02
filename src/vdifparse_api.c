@@ -51,8 +51,6 @@ DataStream open_file(const char* file_path) {
     if (status != SUCCESS) {
         raise_warning("filename was not structured to specifications.");
     }
-    // TODO remove
-    buffer_frames(&ds, BUFFER_FRAMES);
     return ds;
 }
 
@@ -74,39 +72,43 @@ int set_format_designator(DataStream* ds, const char* format_designator) {
 
 // MARK: process data
 
-int init_decode_output(DataStream ds, unsigned long num_samples, float** out, unsigned long* valid_samples) {
-    out = malloc(ds.num_channels * sizeof(float*));
-    if (out == NULL) { return FAILED_MALLOC; }
-    valid_samples = malloc(ds.num_selected_channels * sizeof(float));
-    if (valid_samples == NULL) { return FAILED_MALLOC; }
+int init_decode_output(DataStream ds, unsigned long num_samples, float*** out, unsigned long** valid_samples) {
+    float** new_out = malloc(ds.num_selected_channels * sizeof(float*));
+    if (new_out == NULL) { return FAILED_MALLOC; }
+    unsigned long* new_samples = malloc(ds.num_selected_channels * sizeof(float));
+    if (new_samples == NULL) { return FAILED_MALLOC; }
     for (long i = 0; i < ds.num_selected_channels; i++) {
-        out[i] = malloc(ds.num_selected_channels * sizeof(float));
-        if (out[i] == NULL) { return FAILED_MALLOC; }
-        valid_samples[i] = 0;
+        new_out[i] = malloc(num_samples * sizeof(float));
+        if (new_out[i] == NULL) { return FAILED_MALLOC; }
+        new_samples[i] = 0;
     }
+    *out = new_out;
+    *valid_samples = new_samples;
     return SUCCESS;
 }
 
-int decode_samples(DataStream ds, unsigned long num_samples, float** out, unsigned long* valid_samples) {
+int decode_samples(DataStream* ds, unsigned long num_samples, float*** out, unsigned long** valid_samples) {
     // if samples to decode is 0, we have already succeeded
     if (num_samples < 1) { return SUCCESS; }
     int status;
     // if output buffers are not set up yet, do that
     // and if that fails, return with the error arising from the attempt
-    if (out == NULL || out[0] == NULL || valid_samples == NULL) {
-        status = init_decode_output(ds, num_samples, out, valid_samples);
+    if (*out == NULL || *out[0] == NULL || *valid_samples == NULL) {
+        status = init_decode_output(*ds, num_samples, out, valid_samples);
         if (status != SUCCESS) { return status; }
     }
     // otherwise we actually have to do work
     unsigned long decoded_samples = 0;
     int last_buffer = 0;
     DataFrame* next_frame = malloc(sizeof(DataFrame));
-    int has_frame = get_next_buffer_frame(ds, next_frame);
+    int has_frame = (get_next_buffer_frame(ds, &next_frame) == SUCCESS);
     while (has_frame && decoded_samples < num_samples) {
-        status = decode_frame(ds, next_frame, num_samples - decoded_samples, out, valid_samples);
+        status = decode_frame(*ds, next_frame, num_samples - decoded_samples, out, valid_samples);
+        // TODO remove above
+        // status = decode_frame(*ds, next_frame, num_samples - decoded_samples, &out[decoded_samples], valid_samples);
         if (status < SUCCESS) { return status; }
         decoded_samples += status; // otherwise response = samples decoded
-        has_frame = get_next_buffer_frame(ds, next_frame); // get next_frame
+        has_frame = get_next_buffer_frame(ds, &next_frame); // get next_frame
     }
     // TODO replace for StreamMode
     if (decoded_samples < num_samples) { return REACHED_END_OF_FILE; }

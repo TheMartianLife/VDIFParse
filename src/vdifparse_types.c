@@ -28,6 +28,8 @@
 #define FD_NBITS_ARG 2
 #define FD_NTHREAD_ARG 3
 
+#define DWORD_BITS 32
+
 DataStream init_stream(enum InputMode mode) {
     DataStreamInput input = init_input(mode);
     DataStream ds = { .input = input };
@@ -276,10 +278,40 @@ unsigned long long get_num_samples(DataFrame df) {
     int multiplier = (int)get_data_type(df) + 1; // real=1*bits, complex=2*bits
     unsigned int bits_per_sample = get_bits_per_sample(df) * multiplier;
     unsigned long num_channels = get_num_channels(df);
-    // TODO work out for various word widths + padding
     unsigned long long frame_bytes = get_frame_length(df);
+    if (df.format == CODIF) {
+        // sample block length (in 64-bit words) already accounts for padding
+        unsigned long sample_bytes = df.codif->header->sample_block_length * 8;
+        return frame_bytes / sample_bytes;
+    } else {
+        // calculate size of segment (AKA complete sample)
+        unsigned long long segment_bits = (bits_per_sample * num_channels);
+        unsigned long long frame_words = (frame_bytes / 4);
+        if (segment_bits > DWORD_BITS) {
+            // complete samples are taking more than a word each
+            if (bits_per_sample > DWORD_BITS) {
+                // then padding will mean each sample will be 2 words long
+                return (frame_words / 2) / num_channels;
+            } else if (bits_per_sample == DWORD_BITS) {
+                // each sample will be exactly 1 word long
+                return frame_words / num_channels;
+            } else {
+                // otherwise it's just the number of samples in the frame
+                unsigned int samples_per_word = DWORD_BITS / bits_per_sample;
+                // divided by the number of channels that make up a complete
+                return (frame_words * samples_per_word) / num_channels;
+            }
+        } else {
+            // however many complete samples fit in each 32-bit word
+            unsigned int segments_per_word = DWORD_BITS / segment_bits;
+            // times the number of 32-bit words in the frame
+            return frame_words * segments_per_word;
+        }
+    }
     return 0;
 }
+
+
 
 datetime get_start_time(DataFrame df) {
     unsigned int year = get_reference_epoch_year(df);
@@ -302,24 +334,25 @@ FILE* get_file_handle(DataStreamInput di) {
     return (FILE*)NULL;
 }
 
-int get_next_buffer_frame(DataStream ds, DataFrame* frame) {
+int get_next_buffer_frame(DataStream* ds, DataFrame** frame) {
     // TODO thread lock
-    unsigned int next_frame_num = ds.num_processed_frames;
+    unsigned int next_frame_num = ds->num_processed_frames;
     int status;
-    if (next_frame_num >= ds.num_buffered_frames && ds.input.mode == FileMode) {
+    if (next_frame_num >= ds->num_buffered_frames && ds->input.mode == FileMode) {
         // buffer more frames from file
-        status = buffer_frames(&ds, BUFFER_FRAMES);
+        status = buffer_frames(ds, BUFFER_FRAMES);
     }
-    ds.num_processed_frames++;
+    ds->num_processed_frames++;
     // if we succeeded in finding more frames
-    if (next_frame_num < ds.num_buffered_frames) {
-        frame = &ds.frames[next_frame_num];
+    if (next_frame_num < ds->num_buffered_frames) {
+        *frame = &ds->frames[next_frame_num];
         // TODO thread unlock
         return SUCCESS;
     } else {
-        frame = (DataFrame*)NULL;
+        *frame = (DataFrame*)NULL;
         // TODO thread unlock
-        return (ds.input.mode == FileMode) ? status : REACHED_END_OF_BUFFER;
+        if (status == SUCCESS) { status = FAILURE; }
+        return (ds->input.mode == FileMode) ? status : REACHED_END_OF_BUFFER;
     }
 }
 

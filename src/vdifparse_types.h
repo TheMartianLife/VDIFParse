@@ -52,7 +52,6 @@ enum DataFormat { VDIF=1, VDIF_LEGACY, CODIF };
 enum DataType { RealData, ComplexData };
 enum GapPolicy  { SkipInvalid, InsertInvalid };
 
-
 // MARK: Stream input types
 
 typedef struct DataStreamInput_File {
@@ -292,7 +291,7 @@ DataStream init_stream(enum InputMode mode);
 int ingest_format_designator(DataStream* ds, const char* format_designator);
 int ingest_structured_filename(DataStream* ds, const char* file_path);
 
-int get_next_buffer_frame(DataStream ds, DataFrame* out);
+int get_next_buffer_frame(DataStream* ds, DataFrame** out);
 unsigned int should_buffer_frame(DataStream ds, const DataFrame df);
 
 #endif // VDIFPARSE_TYPES_H
