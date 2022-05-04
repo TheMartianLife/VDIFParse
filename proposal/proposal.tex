@@ -3,6 +3,7 @@
 \usepackage{listings}
 \usepackage[usenames,dvipsnames]{xcolor}
 \usepackage[margin=1in]{geometry}
+\usepackage[framemethod=tikz]{mdframed}
 
 \title{Proposal: VDIFParse}
 \author{Mars Buttfield-Addison}
@@ -26,6 +27,8 @@
 	stringstyle=\color{redstrings},
 }
 
+\renewcommand{\familydefault}{\sfdefault}
+
 \begin{document}
 \maketitle
 
@@ -38,9 +41,9 @@ This presents an opportunity to create a new library that combines the functiona
 \section{Assumed Use Cases}
 
 \begin{itemize}
-\item Someone wants to reorganize/filter data into files that will be fast to decode or analyse later.
+\item Someone wants to organise/filter data into files that will be faster to decode or analyse later.
 \item Someone wants to know the properties of the data they have.
-\item Someone wants to 	
+\item Someone wants to decode data for use in a later software spectrometer or analysis pipeline.
 \end{itemize}
 
 
@@ -57,6 +60,17 @@ To make it easier for later analysis, some file management utilities should be i
 \end{itemize}
 
 \subsection{Data Summary}
+
+To report on the contents of a data stream, some utilities should be included that will do a quick parse of a file, extracting attributes from only frame headers.
+
+\begin{itemize}
+	\item \textbf{Summarize file}	
+\end{itemize}
+
+\begin{mdframed}[hidealllines=true,backgroundcolor=blue!20]
+	\textbf{NOTE}: Data summary may require
+\end{mdframed}
+
 
 \subsection{Data Dispatch}
 
