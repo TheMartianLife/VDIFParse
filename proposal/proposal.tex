@@ -2,6 +2,7 @@
 
 \usepackage{listings}
 \usepackage[usenames,dvipsnames]{xcolor}
+\usepackage[margin=1in]{geometry}
 
 \title{Proposal: VDIFParse}
 \author{Mars Buttfield-Addison}
@@ -34,7 +35,32 @@ Currently, the need to ingest and manipulate telescope data in the modern standa
 
 This presents an opportunity to create a new library that combines the functionality of the two previous libraries, designed especially for performance with the VDIF format. Coupled with a modern, easy-to-use API, such a library could also fill a gap that would allow quick creation of small VDIF processing programs. Herein proposes such a solution, called \texttt{VDIFParse}.
 
-\section{Use Cases}
+\section{Assumed Use Cases}
+
+\begin{itemize}
+\item Someone wants to reorganize/filter data into files that will be fast to decode or analyse later.
+\item Someone wants to know the properties of the data they have.
+\item Someone wants to 	
+\end{itemize}
+
+
+\section{Required Functionality}
+
+\subsection{File Management}
+
+To make it easier for later analysis, some file management utilities should be included that will split or ``clean up'' files. This will not perform any analysis or decoding of the file contents beyond that required to move frames around.
+
+\begin{itemize}
+	\item \textbf{Split file}: take in a file path (e.g., \texttt{~/example.vdif}) and output new files for each thread or thread group (e.g., \texttt{~/example\_thread0.vdif}). This can be used to turn compound data streams into multiple simple data streams, or save later work in loading all threads from a file just to decode one.
+	\item \textbf{Clean file}: take in a file path and output a new file that has been skew corrected--meaning frames have been sorted in order of seconds from epoch and then thread id--and inserted empty invalid frames for any time gaps.
+	\item \textbf{Split and clean file}: perform split file and also clean each new file as it is being written to.
+\end{itemize}
+
+\subsection{Data Summary}
+
+\subsection{Data Dispatch}
+
+\subsection{Data Decode}
 
 \section{Technologies}
 
@@ -42,19 +68,38 @@ Library is to be written in native C, in conformance with \textit{at least} GNU9
 
 \section{API Design}
 
-Usage will centre around a struct type \lstinline{InputStream}, which can be in one of two modes: \lstinline{FileMode} or \lstinline{StreamMode}.
+Usage will centre around a struct type \lstinline{DataStream}, which can be initialised in one of two modes: \lstinline{FileMode} or \lstinline{StreamMode}.
 
 In \lstinline{FileMode}, the expected interaction is that a user will initialise an \lstinline{InputStream} using the \lstinline{open_file()} function and passing a filepath to a valid VDIF or CODIF file.
 
-\begin{lstlisting} 
+\begin{lstlisting}
+#include <stdio.h>
 #include "vdifparse.h"
 
 int main() { 
-	// open new stream (also parses first header)
-	struct InputStream* in = open_file("file.vdif");
+	int res; // holds result status code for each operation
 	
+	// open new stream
+	DataStream ds;
+	open_file("file.vdif", &ds);
 	
-	close(in);
+	// set format designator (saves summarising the file in advance)
+	set_format_designator(&ds, "VDIF-1024-16-2-4");
+	
+	// select specific threads to include in output
+	int selected_threads[2] = { 0, 1 };
+	set_output_threads(&ds, selected_threads);
+	
+	// decode some samples
+	float** output;
+	DecodeMonitor statistics;
+	int num_samples = 20000;
+	decode_samples(&ds, num_samples, &output, &statistics);
+	
+	// free the memory allocated for the stream
+	close(&ds);
+	
+	// (do something with output here)
 } 
 \end{lstlisting} 
 
@@ -65,7 +110,7 @@ In \lstinline{StreamMode}, the expected interaction is that a user will initiali
 
 int main() { 
 	// open new stream (most values remain unset)
-	struct InputStream* in = open_stream();
+	DataStream ds = open_stream();
 	
 	
 	close(in);
@@ -75,7 +120,7 @@ int main() {
 \section{Style and Conventions}
 
 \begin{itemize}
-	\item Type names are in PascalCase (e.g., \lstinline{InputStream}).
+	\item Type names are in PascalCase (e.g., \lstinline{DataStream}).
 	\item Function and variable names are in snake\_case (e.g., \lstinline{sample_rate}).
 \end{itemize}
 
@@ -83,8 +128,7 @@ int main() {
 
 \begin{enumerate}
 	\item Nowadays, the most popular architectures (x86-64, IA-32, etc.) all use little-endianness. Can you think of a device or prospective used that would still require support for big-endianness?
-	\item In the current form, it is technically possible to use one \lstinline{InputStream} in both \lstinline{FileMode} and \lstinline{StreamMode} at different times (e.g., open a file and then later stream more data in). Can you think of any conceptual reasons to allow or disallow this?
-	\item In the style of \texttt{mark5access}, it may be advisable to add a domain marker such as a \lstinline{vp_} prefix to all types or functions, to prevents overloading when imported into other projects. Can you think of any reason not to do this?
+	\item The VDIF and CODIF specs allow for anywhere from 1-bit to 32-bit samples, but existing software only shows support for 1, 2, 4 or 8-bit decode. Should support be added for the full range of sample options?
 \end{enumerate}
 
 	
